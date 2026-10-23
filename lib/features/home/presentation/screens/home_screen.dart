@@ -3,6 +3,7 @@ import '../../../../core/bridge/unity_bridge_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/cyber_button.dart';
+import 'package:tesla_roadster_game/features/arcade_driving/presentation/screens/arcade_game_screen.dart';
 import 'package:tesla_roadster_game/features/game_viewport/presentation/screens/game_viewport_screen.dart';
 import '../widgets/quick_specs_row.dart';
 import '../widgets/roadster_hero_banner.dart';
@@ -63,13 +64,30 @@ class HomeScreen extends StatelessWidget {
               const SystemStatusCard(),
               const SizedBox(height: 24),
 
-              // Main Play Button
+              // Feature 02: Playable Arcade Driving Prototype (Flutter-only)
+              CyberButton(
+                key: const Key('play_arcade_game_button'),
+                text: 'Play Arcade Drive (Flutter)',
+                icon: Icons.sports_motorsports_rounded,
+                variant: CyberButtonVariant.primary,
+                height: 58,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ArcadeGameScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+
+              // Feature 01: 3D Mission Foundation (Preserved)
               CyberButton(
                 key: const Key('play_game_button'),
                 text: 'Launch 3D Mission',
-                icon: Icons.play_arrow_rounded,
-                variant: CyberButtonVariant.primary,
-                height: 56,
+                icon: Icons.view_in_ar_rounded,
+                variant: CyberButtonVariant.outline,
+                height: 52,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(

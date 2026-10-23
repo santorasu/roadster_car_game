@@ -5,8 +5,8 @@
 | Feature ID | Feature Name | Platform | Status |
 | :--- | :--- | :--- | :--- |
 | **FEATURE 01** | **Android-Only Project Foundation** | **Android Only** | **COMPLETED & VERIFIED** |
-| FEATURE 02 | Vehicle Physics & Input Controls | Android Only | Planned (Pending Next Phase) |
-| FEATURE 03 | Dynamic Track & Environment Rendering | Android Only | Planned |
+| **FEATURE 02** | **Playable Car Game Prototype (Flutter Only)** | **Android Only** | **COMPLETED & VERIFIED** |
+| FEATURE 03 | Dynamic Track & Environment Rendering | Android Only | Planned (Pending Next Phase) |
 | FEATURE 04 | Sound Design & Audio FX Engine | Android Only | Planned |
 | FEATURE 05 | Game Modes & Performance Optimization | Android Only | Planned |
 
@@ -72,15 +72,36 @@
 
 ---
 
-## Next Steps for Feature 02 (Preparation Only)
+---
 
-*Note: Per constraints, Feature 02 will NOT be started automatically.*
+## Feature 02: Playable Car Game Prototype (Flutter Only) (Detailed Breakdown)
 
-1. **Vehicle Physics**:
-   - Implement realistic electric powertrain torque curves (instant torque profile, top speed governor).
-   - Tire friction curves, slip angle calculation, and downforce simulation.
-2. **Input Controls**:
-   - On-screen touch steering wheel / slider option and tilt/gyro accelerometer steering.
-   - Progressive throttle/brake pedals with haptic feedback.
-3. **Camera System**:
-   - Dynamic chase camera with high-speed field-of-view expansion and camera shake on hard acceleration/braking.
+### Acceptance Criteria & Verification Matrix
+
+| Requirement | Implementation Summary | Status | Verified Target |
+| :--- | :--- | :---: | :--- |
+| **1. Inspect & Preserve Feature 01** | Preserved all Feature 01 code, Unity foundation files, bridge protocols, tests, and home screen launch options. | **PASS** | Workspace & Tests |
+| **2. Remove Unity Runtime Dependency for Gameplay** | Implemented 100% Flutter-based physics engine (`ArcadeGameEngine`) and canvas rendering with zero Unity runtime requirement. | **PASS** | Android 15 Emulator |
+| **3. Custom Pseudo-3D Perspective Driving Scene** | Created custom canvas painters (`ArcadeRoadPainter`, `ArcadeCarPainter`, `ArcadeObstaclePainter`, `ArcadeParticlePainter`) with depth scaling. | **PASS** | Live 60 FPS Target Render |
+| **4. Core Driving Physics & Mechanics** | Implemented road scrolling, lane markings, smooth steering with roll tilt, instant torque acceleration (to 250 MPH), regenerative braking, and AABB collision detection. | **PASS** | Automated Unit Tests & Live Run |
+| **5. Touch Controls for Android** | Built ergonomic multi-touch controls using `flutter_screenutil` (Left/Right steer pads, Drive/Boost pedal, Regenerative Brake pedal). | **PASS** | Live Touch Input (`emulator-5554`) |
+| **6. Telemetry HUD, Pause, & Game Over** | Built responsive HUD with digital speedometer, distance counter (KM), score & combo multiplier, hull integrity bar, pause button, and game-over dialog. | **PASS** | Verified via live screen capture |
+| **7. Restart & Score Tracking** | Implemented instant restart mechanism, high score preservation, distance bonuses, and near-miss overtaking rewards. | **PASS** | Verified in tests & emulator |
+| **8. Feature-First Clean Architecture** | Organized under `lib/features/arcade_driving/` into `domain/models`, `domain/game_engine`, `presentation/controllers`, `painters`, `widgets`, and `screens`. | **PASS** | `flutter analyze` (0 issues) |
+| **9. Original Car Artwork & Attribution** | Created 100% original Cyber Roadster vector graphics without Tesla logos or trademarks, complying with attribution rules. | **PASS** | Original Procedural Canvas Art |
+| **10. Flutter Analysis, Tests, & Android Builds** | Zero analyzer issues, 14/14 automated tests passing, clean debug APK and release APK (46.7 MB) generated and verified on target. | **PASS** | Android 15 Emulator & Gradle |
+
+---
+
+## Next Steps for Feature 03 (Preparation Only)
+
+*Note: Per constraints, Feature 03 will NOT be started automatically.*
+
+1. **Dynamic Track Generation**:
+   - Curving roads (left/right curves and elevation changes).
+   - Dynamic track segments with varied lane widths and tunnel sections.
+2. **Day/Night Cycle & Cyberpunk Weather**:
+   - Neon rain particle effects with wet road asphalt specular reflections.
+   - Dynamic horizon lighting transitions.
+3. **Power-Ups & Pickups**:
+   - EMP shield pickups, battery supercharger boost pads, and credit coins.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../core/lifecycle/android_lifecycle_observer.dart';
 import '../core/theme/app_theme.dart';
 import '../features/home/presentation/screens/home_screen.dart';
@@ -28,11 +29,19 @@ class _TeslaRoadsterGameAppState extends State<TeslaRoadsterGameApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Cyber Roadster 3D',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const HomeScreen(),
+    return ScreenUtilInit(
+      designSize: const Size(390, 844),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Cyber Roadster 3D',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.darkTheme,
+          home: child,
+        );
+      },
+      child: const HomeScreen(),
     );
   }
 }

@@ -10,14 +10,21 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ---
 
-## Key Features in Feature 01
+## Key Features
 
-- **Clean Feature-First Architecture**: Structured into modular `core/` and `features/` (`home`, `game_viewport`) modules.
-- **Minimal Home Screen**: Tesla Roadster cyber aesthetic with quick performance specs, real-time Android integration diagnostics, Play button, error simulation, and retry flow.
-- **Versioned Communication Bridge (`v1.0.0`)**: Standardized JSON protocol supporting bidirectional handshake negotiation, heartbeat ping/pong, 10 Hz real-time telemetry streaming, steering/throttle/brake inputs, camera view cycling, and vehicle finish customization.
-- **Unity 3D Project Structure**: Standalone Unity 2022.3 LTS project at `unity/TeslaRoadsterGame/` with `BootstrapScene.unity`, placeholder vehicle prefab, C# bridge scripts, and automated Android Gradle library export.
-- **Android Runtime Integration**: Configured `minSdk = 24` (Android 7.0+ Nougat), `targetSdk = 35` (Android 15), ARM64 architecture, ProGuard/R8 rules, and Android activity lifecycle & memory observers.
-- **Dual-Mode Bridge Adapter**: High-fidelity reactive bridge adapter enables interactive 3D simulation, HUD verification, error testing, and CI automated testing without requiring local multi-gigabyte Unity Editor binary compilation.
+### 🏎️ Feature 02: Playable Arcade Driving Game (Flutter Only)
+- **100% Pure Flutter Arcade Physics**: Zero Unity runtime dependency for instant, smooth 60 FPS gameplay on Android.
+- **Pseudo-3D Perspective Road**: Custom canvas rendering with horizon vanishing depth, neon glowing road barriers, and scrolling lane stripes.
+- **Original Cyber Roadster Supercar**: Procedural vector sports car art with dynamic headlights, brake light halos, high-speed blue thruster plumes, and roll angle tilt during steering.
+- **Traffic Obstacles & Dynamic Collision**: Procedural obstacle spawning (Cyber Sedans, Cyber Trucks, Heavy Haulers, Energy Barriers) with bounding box collision detection and spark FX.
+- **Responsive Android Touch Controls**: Multi-touch steering pads, regenerative braking pedal, and drive/boost accelerator scaled with `flutter_screenutil`.
+- **Complete Arcade Game Loop**: Real-time telemetry HUD (speedometer, distance in KM, score & combo multiplier, hull integrity bar), interactive pause menu, game over screen with score tracking, and instant restart.
+
+### 🔌 Feature 01: Hybrid Project Foundation & 3D Bridge (Preserved)
+- **Clean Feature-First Architecture**: Structured into modular `core/` and `features/` (`home`, `arcade_driving`, `game_viewport`).
+- **Versioned Communication Bridge (`v1.0.0`)**: Standardized JSON protocol supporting bidirectional handshake negotiation, heartbeat ping/pong, and 10 Hz telemetry.
+- **Unity 3D Project Structure**: Standalone Unity 2022.3 LTS project at `unity/TeslaRoadsterGame/` with `BootstrapScene.unity`, placeholder vehicle prefab, and C# bridge scripts.
+- **Android Runtime Integration**: Configured `minSdk = 24`, `targetSdk = 35`, ARM64 ABI, ProGuard/R8 rules, and Android lifecycle observers.
 
 ---
 

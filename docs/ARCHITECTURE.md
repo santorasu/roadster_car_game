@@ -90,6 +90,27 @@ tesla_roadster_game/
 │   │       ├── glass_card.dart         # Glassmorphic elevated container
 │   │       └── status_badge.dart       # Status chip with pulsing LED glow
 │   ├── features/
+│   │   ├── arcade_driving/             # Feature 02: Flutter-only Arcade Driving Engine
+│   │   │   ├── domain/
+│   │   │   │   ├── game_engine/arcade_game_engine.dart # Pure Dart physics, collision, scoring
+│   │   │   │   └── models/
+│   │   │   │       ├── arcade_game_state.dart          # Session score, high score, status
+│   │   │   │       ├── game_particle.dart              # Collision sparks, speed streaks
+│   │   │   │       ├── obstacle_vehicle.dart           # Traffic vehicles & road hazards
+│   │   │   │       └── player_car.dart                 # Roadster physics, health, roll angle
+│   │   │   └── presentation/
+│   │   │       ├── controllers/arcade_game_controller.dart # Ticker loop coordinator
+│   │   │       ├── painters/
+│   │   │       │   ├── arcade_car_painter.dart         # Original cyber supercar vector art
+│   │   │       │   ├── arcade_obstacle_painter.dart    # Cyber sedans, trucks, haulers
+│   │   │       │   ├── arcade_particle_painter.dart    # Sparks & speed lines
+│   │   │       │   └── arcade_road_painter.dart        # Pseudo-3D perspective road
+│   │   │       ├── screens/arcade_game_screen.dart     # Fullscreen gameplay screen
+│   │   │       └── widgets/
+│   │   │           ├── arcade_game_over_dialog.dart    # Mission failed & retry overlay
+│   │   │           ├── arcade_hud.dart                 # Telemetry HUD (ScreenUtil responsive)
+│   │   │           ├── arcade_pause_dialog.dart        # Simulation paused modal
+│   │   │           └── arcade_touch_controls.dart      # Multi-touch steering & pedals
 │   │   ├── home/
 │   │   │   └── presentation/
 │   │   │       ├── screens/home_screen.dart # Home menu, specs, play & test buttons
@@ -97,7 +118,7 @@ tesla_roadster_game/
 │   │   │           ├── roadster_hero_banner.dart # Silhouette & brand banner
 │   │   │           ├── quick_specs_row.dart      # Performance metric cards
 │   │   │           └── system_status_card.dart   # Real-time Android runtime stats
-│   │   └── game_viewport/
+│   │   └── game_viewport/              # Feature 01: Unity 3D Foundation & Diagnostics
 │   │       ├── domain/models/
 │   │       │   ├── game_session_state.dart       # Phase, scenes, steps state
 │   │       │   └── telemetry_data.dart           # Real-time vehicle physics model
@@ -112,7 +133,8 @@ tesla_roadster_game/
 │   │               └── bridge_debug_panel.dart      # Live JSON protocol inspector
 │   └── main.dart                       # Entry point, orientation constraints
 ├── test/
-│   └── widget_test.dart                # Automated UI and bridge unit/widget test suite
+│   ├── arcade_driving_test.dart        # Feature 02 unit & widget test suite
+│   └── widget_test.dart                # Feature 01 UI and bridge test suite
 └── unity/
     └── TeslaRoadsterGame/              # Standalone Unity 2022.3 LTS Project
         ├── Assets/
