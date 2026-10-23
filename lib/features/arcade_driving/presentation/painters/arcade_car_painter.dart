@@ -8,27 +8,29 @@ import '../../domain/models/player_car.dart';
 /// razor-thin taillight blade, dynamic underglow, and active aerodynamic thrusters.
 class ArcadeCarPainter extends CustomPainter {
   final PlayerCar player;
+  final double curveOffset;
 
-  ArcadeCarPainter({required this.player});
+  ArcadeCarPainter({
+    required this.player,
+    this.curveOffset = 0.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
 
-    // Road boundaries and car dimension scaling
-    final roadWidth = w * 0.72;
-    final carWidth = roadWidth * 0.17;
-    final carHeight = carWidth * 1.95;
-
-    final centerX = (w / 2) + (player.lanePosition * (roadWidth / 2 - carWidth * 0.6));
-    final centerY = h * 0.75;
+    // Use curved bounding rectangle for exact physics alignment
+    final rect = player.getBoundingRect(w, h, curveOffset);
+    final carWidth = rect.width / 0.85;
+    final carHeight = rect.height / 0.85;
 
     canvas.save();
-    canvas.translate(centerX, centerY);
+    canvas.translate(rect.center.dx, rect.center.dy);
 
-    // Dynamic car tilt / roll during steering
-    canvas.rotate(player.rollAngle);
+    // Dynamic car tilt / roll during steering and banking into road curve
+    final curveBank = -curveOffset * 0.04;
+    canvas.rotate(player.rollAngle + curveBank);
 
     // 1. Perspective Headlight Light Cones onto Asphalt
     _drawHeadlightBeams(canvas, carWidth, carHeight);
@@ -656,7 +658,8 @@ class ArcadeCarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ArcadeCarPainter oldDelegate) {
-    return oldDelegate.player.lanePosition != player.lanePosition ||
+    return oldDelegate.curveOffset != curveOffset ||
+        oldDelegate.player.lanePosition != player.lanePosition ||
         oldDelegate.player.speedMph != player.speedMph ||
         oldDelegate.player.rollAngle != player.rollAngle ||
         oldDelegate.player.isAccelerating != player.isAccelerating ||

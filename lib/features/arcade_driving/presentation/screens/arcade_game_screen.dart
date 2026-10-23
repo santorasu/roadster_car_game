@@ -157,6 +157,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                     painter: ArcadeRoadPainter(
                       scrollOffset: _controller.roadScrollOffset,
                       playerSpeedMph: _controller.player.speedMph,
+                      curveOffset: _controller.state.currentCurvature,
                     ),
                     foregroundPainter: null,
                     child: Stack(
@@ -166,6 +167,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                           child: CustomPaint(
                             painter: ArcadeObstaclePainter(
                               obstacles: _controller.obstacles,
+                              curveOffset: _controller.state.currentCurvature,
                             ),
                           ),
                         ),
@@ -175,6 +177,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                           child: CustomPaint(
                             painter: ArcadeCarPainter(
                               player: _controller.player,
+                              curveOffset: _controller.state.currentCurvature,
                             ),
                           ),
                         ),

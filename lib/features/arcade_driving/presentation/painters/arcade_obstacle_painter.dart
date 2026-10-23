@@ -6,8 +6,12 @@ import '../../domain/models/obstacle_vehicle.dart';
 /// tinted glass canopies, and vibrant emissive lighting assemblies.
 class ArcadeObstaclePainter extends CustomPainter {
   final List<ObstacleVehicle> obstacles;
+  final double curveOffset;
 
-  ArcadeObstaclePainter({required this.obstacles});
+  ArcadeObstaclePainter({
+    required this.obstacles,
+    this.curveOffset = 0.0,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -15,12 +19,20 @@ class ArcadeObstaclePainter extends CustomPainter {
     final h = size.height;
 
     for (final obstacle in obstacles) {
-      final rect = obstacle.getBoundingRect(w, h);
+      final rect = obstacle.getBoundingRect(w, h, curveOffset);
       final cw = rect.width;
       final ch = rect.height;
 
       canvas.save();
       canvas.translate(rect.center.dx, rect.center.dy);
+
+      // Align vehicle heading with curved road trajectory
+      if (curveOffset != 0.0) {
+        final horizonY = h * 0.18;
+        final t = ((rect.center.dy - horizonY) / (h - horizonY)).clamp(0.0, 1.0);
+        final curveYaw = -curveOffset * (1.0 - t) * 0.08;
+        canvas.rotate(curveYaw);
+      }
 
       // 1. Perspective-Correct Soft Contact Ground Shadow
       _drawContactShadow(canvas, cw, ch);

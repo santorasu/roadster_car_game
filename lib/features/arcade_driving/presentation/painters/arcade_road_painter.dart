@@ -1,18 +1,53 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Renders an enhanced pseudo-3D cyber highway environment with multi-layered parallax
-/// skylines, scrolling roadside cyber streetlamps/gantries, alternating kerb rumble strips,
-/// 3D guardrail posts with neon crash barriers, textured asphalt with tire wear sheen,
-/// dashed lane dividers with reflective cat's-eye studs, and high-speed warp effects.
+/// Renders a dynamic pseudo-3D cyber highway environment with support for smooth
+/// curved road geometry, multi-layered parallax skylines, scrolling roadside gantries,
+/// alternating kerb rumble strips, 3D guardrails with glowing neon crash barriers,
+/// asphalt wet sheen, dashed lane dividers with cat's-eye studs, and speed effects.
 class ArcadeRoadPainter extends CustomPainter {
   final double scrollOffset;
   final double playerSpeedMph;
+  final double curveOffset;
 
   ArcadeRoadPainter({
     required this.scrollOffset,
     required this.playerSpeedMph,
+    this.curveOffset = 0.0,
   });
+
+  /// Center X offset of the road at vertical depth t (0.0 = horizon, 1.0 = bottom)
+  double getCurveShift(double t, double w) {
+    final maxHorizonShift = w * 0.28;
+    return curveOffset * maxHorizonShift * math.pow(1.0 - t, 2.0);
+  }
+
+  /// Center X coordinate of the road at depth t
+  double getRoadCenterX(double t, double w) {
+    return (w / 2) + getCurveShift(t, w);
+  }
+
+  /// Road width at depth t
+  double getRoadWidth(double t, double w) {
+    final topW = w * 0.32;
+    final botW = w * 0.78;
+    return topW + (botW - topW) * t;
+  }
+
+  /// Left edge X coordinate of road at depth t
+  double getRoadLeftX(double t, double w) {
+    return getRoadCenterX(t, w) - (getRoadWidth(t, w) / 2);
+  }
+
+  /// Right edge X coordinate of road at depth t
+  double getRoadRightX(double t, double w) {
+    return getRoadCenterX(t, w) + (getRoadWidth(t, w) / 2);
+  }
+
+  /// Vertical Y coordinate at depth t
+  double getRoadY(double t, double h, double horizonY) {
+    return horizonY + (h - horizonY) * t;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -22,38 +57,29 @@ class ArcadeRoadPainter extends CustomPainter {
     // Horizon line (vanishing point at ~18% screen height)
     final horizonY = h * 0.18;
 
-    // 1. Deep Cyber Sky & Multi-Tier Distant Skyline
+    // 1. Deep Cyber Sky & Multi-Tier Distant Skyline with Parallax Yaw
     _drawSkyAndSkyline(canvas, w, h, horizonY);
 
     // 2. Off-Road Perspective Neon Terrain Grid
     _drawOffRoadTerrain(canvas, w, h, horizonY);
 
-    // Road Geometry: Width at horizon: 32% of screen; at bottom: 78% of screen
-    final roadTopWidth = w * 0.32;
-    final roadBottomWidth = w * 0.78;
+    // 3. Road Shoulder Gravel Run-Off Strips (Curved)
+    _drawRoadShoulders(canvas, w, h, horizonY);
 
-    final roadTopLeft = (w - roadTopWidth) / 2;
-    final roadTopRight = roadTopLeft + roadTopWidth;
-    final roadBottomLeft = (w - roadBottomWidth) / 2;
-    final roadBottomRight = roadBottomLeft + roadBottomWidth;
+    // 4. Main Asphalt Highway Surface & Wet Sheen (Curved)
+    _drawAsphaltSurface(canvas, w, h, horizonY);
 
-    // 3. Road Shoulder Gravel Run-Off Strips
-    _drawRoadShoulders(canvas, w, h, horizonY, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight);
+    // 5. Dynamic Scrolling Kerb Rumble Strips (Red/White & Cyan along curve)
+    _drawRumbleStrips(canvas, w, h, horizonY);
 
-    // 4. Main Asphalt Highway Surface & Wet Sheen
-    _drawAsphaltSurface(canvas, w, h, horizonY, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight);
+    // 6. 3D Elevated Guardrails, Support Posts & Continuous Glowing Neon Barriers
+    _drawGuardrailsAndBarriers(canvas, w, h, horizonY);
 
-    // 5. Dynamic Scrolling Kerb Rumble Strips (Red/White & Cyan)
-    _drawRumbleStrips(canvas, horizonY, h, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight);
+    // 7. Scrolling Dashed Lane Dividers with Reflective Cat's-Eye Studs (Curved)
+    _drawLaneDividersAndStuds(canvas, w, h, horizonY);
 
-    // 6. 3D Elevated Guardrails, Support Posts & Glowing Neon Barriers
-    _drawGuardrailsAndBarriers(canvas, horizonY, h, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight);
-
-    // 7. Scrolling Dashed Lane Dividers with Reflective Cat's-Eye Studs
-    _drawLaneDividersAndStuds(canvas, horizonY, h, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight);
-
-    // 8. Roadside Cyber Streetlamps / Light Gantries with Roadside Scenery
-    _drawRoadsideGantriesAndScenery(canvas, w, h, horizonY, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight);
+    // 8. Roadside Cyber Streetlamps / Light Gantries with Roadside Scenery (Curved)
+    _drawRoadsideGantriesAndScenery(canvas, w, h, horizonY);
 
     // 9. High-Speed Warp Streaks (active at > 85 MPH)
     if (playerSpeedMph > 85.0) {
@@ -81,11 +107,17 @@ class ArcadeRoadPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, w, horizonY));
     canvas.drawRect(Rect.fromLTWH(0, 0, w, horizonY), skyPaint);
 
+    // Parallax horizon counter-shift during turns
+    final parallaxShift = -curveOffset * 32.0;
+
+    canvas.save();
+    canvas.translate(parallaxShift, 0.0);
+
     // 2. Distant Starfield & Data Grid Points
     final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.45);
     final rng = math.Random(1337);
     for (int i = 0; i < 35; i++) {
-      final sx = rng.nextDouble() * w;
+      final sx = rng.nextDouble() * (w + 80.0) - 40.0;
       final sy = rng.nextDouble() * (horizonY * 0.75);
       final r = 0.5 + rng.nextDouble() * 1.0;
       canvas.drawCircle(Offset(sx, sy), r, starPaint);
@@ -94,8 +126,8 @@ class ArcadeRoadPainter extends CustomPainter {
     // 3. Multi-Layer Cyberpunk City Skyline
     // Layer A: Distant Dark Mega-Pyramids and Monoliths
     final megaPaint = Paint()..color = const Color(0xFF090E1A);
-    double mx = 0;
-    while (mx < w) {
+    double mx = -60.0;
+    while (mx < w + 60.0) {
       final mw = 40.0 + rng.nextDouble() * 70.0;
       final mh = 25.0 + rng.nextDouble() * 55.0;
       canvas.drawRect(Rect.fromLTWH(mx, horizonY - mh, mw, mh), megaPaint);
@@ -108,9 +140,9 @@ class ArcadeRoadPainter extends CustomPainter {
     final windowAmber = const Color(0xFFFFB300).withValues(alpha: 0.65);
     final beaconRed = const Color(0xFFFF1744);
 
-    double bx = 0;
+    double bx = -40.0;
     int bIndex = 0;
-    while (bx < w) {
+    while (bx < w + 40.0) {
       final bw = 16.0 + rng.nextDouble() * 32.0;
       final bh = 18.0 + rng.nextDouble() * 42.0;
       final bRect = Rect.fromLTWH(bx, horizonY - bh, bw, bh);
@@ -141,12 +173,18 @@ class ArcadeRoadPainter extends CustomPainter {
       bIndex++;
     }
 
+    canvas.restore();
+
     // 4. Horizon Atmospheric Neon Glow
     final speedNorm = (playerSpeedMph / 250.0).clamp(0.0, 1.0);
     final glowAlpha = 0.28 + 0.20 * speedNorm;
+    final horizonCenter = Offset(getRoadCenterX(0.0, w), horizonY);
     final glowPaint = Paint()
       ..shader = RadialGradient(
-        center: const Alignment(0.0, 1.0),
+        center: Alignment(
+          (horizonCenter.dx / w) * 2.0 - 1.0,
+          1.0,
+        ),
         radius: 1.1,
         colors: [
           const Color(0xFF00E5FF).withValues(alpha: glowAlpha),
@@ -172,47 +210,65 @@ class ArcadeRoadPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, horizonY, w, h - horizonY));
     canvas.drawRect(Rect.fromLTWH(0, horizonY, w, h - horizonY), terrainPaint);
 
-    // Neon perspective terrain grid lines
+    // Neon perspective terrain grid lines extending from road horizon center
     final gridPaint = Paint()
       ..color = const Color(0xFF00F0FF).withValues(alpha: 0.07)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
-    final centerX = w / 2;
+    final horizonX = getRoadCenterX(0.0, w);
+    final bottomCenterX = getRoadCenterX(1.0, w);
+
     for (int i = -8; i <= 8; i++) {
-      if (i.abs() <= 2) continue; // Skip road
-      final bottomX = centerX + (i * (w / 7));
-      canvas.drawLine(Offset(centerX, horizonY), Offset(bottomX, h), gridPaint);
+      if (i.abs() <= 2) continue; // Skip active road area
+      final bottomX = bottomCenterX + (i * (w / 7));
+      canvas.drawLine(Offset(horizonX, horizonY), Offset(bottomX, h), gridPaint);
     }
   }
 
-  void _drawRoadShoulders(
-    Canvas canvas,
-    double w,
-    double h,
-    double horizonY,
-    double roadTopLeft,
-    double roadTopRight,
-    double roadBottomLeft,
-    double roadBottomRight,
-  ) {
-    // Darker asphalt shoulder run-off zone expanding 8% beyond road edges
-    final shoulderTopW = (roadTopRight - roadTopLeft) * 0.12;
-    final shoulderBotW = (roadBottomRight - roadBottomLeft) * 0.14;
+  void _drawRoadShoulders(Canvas canvas, double w, double h, double horizonY) {
+    const int segments = 22;
+    final leftShoulderPath = Path();
+    final rightShoulderPath = Path();
 
-    final leftShoulder = Path()
-      ..moveTo(roadTopLeft - shoulderTopW, horizonY)
-      ..lineTo(roadTopLeft, horizonY)
-      ..lineTo(roadBottomLeft, h)
-      ..lineTo(roadBottomLeft - shoulderBotW, h)
-      ..close();
+    // 1. Build Left Shoulder
+    final topLX = getRoadLeftX(0.0, w);
+    final topSW = getRoadWidth(0.0, w) * 0.12;
+    leftShoulderPath.moveTo(topLX - topSW, horizonY);
 
-    final rightShoulder = Path()
-      ..moveTo(roadTopRight, horizonY)
-      ..lineTo(roadTopRight + shoulderTopW, horizonY)
-      ..lineTo(roadBottomRight + shoulderBotW, h)
-      ..lineTo(roadBottomRight, h)
-      ..close();
+    for (int i = 0; i <= segments; i++) {
+      final t = i / segments;
+      final y = getRoadY(t, h, horizonY);
+      final lx = getRoadLeftX(t, w);
+      final sw = getRoadWidth(t, w) * 0.13;
+      leftShoulderPath.lineTo(lx - sw, y);
+    }
+    for (int i = segments; i >= 0; i--) {
+      final t = i / segments;
+      final y = getRoadY(t, h, horizonY);
+      final lx = getRoadLeftX(t, w);
+      leftShoulderPath.lineTo(lx, y);
+    }
+    leftShoulderPath.close();
+
+    // 2. Build Right Shoulder
+    final topRX = getRoadRightX(0.0, w);
+    rightShoulderPath.moveTo(topRX, horizonY);
+
+    for (int i = 0; i <= segments; i++) {
+      final t = i / segments;
+      final y = getRoadY(t, h, horizonY);
+      final rx = getRoadRightX(t, w);
+      rightShoulderPath.lineTo(rx, y);
+    }
+    for (int i = segments; i >= 0; i--) {
+      final t = i / segments;
+      final y = getRoadY(t, h, horizonY);
+      final rx = getRoadRightX(t, w);
+      final sw = getRoadWidth(t, w) * 0.13;
+      rightShoulderPath.lineTo(rx + sw, y);
+    }
+    rightShoulderPath.close();
 
     final shoulderPaint = Paint()
       ..shader = const LinearGradient(
@@ -221,26 +277,30 @@ class ArcadeRoadPainter extends CustomPainter {
         colors: [Color(0xFF0C101A), Color(0xFF141924), Color(0xFF0E121B)],
       ).createShader(Rect.fromLTWH(0, horizonY, w, h - horizonY));
 
-    canvas.drawPath(leftShoulder, shoulderPaint);
-    canvas.drawPath(rightShoulder, shoulderPaint);
+    canvas.drawPath(leftShoulderPath, shoulderPaint);
+    canvas.drawPath(rightShoulderPath, shoulderPaint);
   }
 
-  void _drawAsphaltSurface(
-    Canvas canvas,
-    double w,
-    double h,
-    double horizonY,
-    double roadTopLeft,
-    double roadTopRight,
-    double roadBottomLeft,
-    double roadBottomRight,
-  ) {
-    final roadPath = Path()
-      ..moveTo(roadTopLeft, horizonY)
-      ..lineTo(roadTopRight, horizonY)
-      ..lineTo(roadBottomRight, h)
-      ..lineTo(roadBottomLeft, h)
-      ..close();
+  void _drawAsphaltSurface(Canvas canvas, double w, double h, double horizonY) {
+    const int segments = 24;
+    final roadPath = Path();
+
+    // Trace along left curve from top to bottom
+    roadPath.moveTo(getRoadLeftX(0.0, w), horizonY);
+    for (int i = 1; i <= segments; i++) {
+      final t = i / segments;
+      roadPath.lineTo(getRoadLeftX(t, w), getRoadY(t, h, horizonY));
+    }
+
+    // Bottom edge
+    roadPath.lineTo(getRoadRightX(1.0, w), h);
+
+    // Trace along right curve from bottom to top
+    for (int i = segments - 1; i >= 0; i--) {
+      final t = i / segments;
+      roadPath.lineTo(getRoadRightX(t, w), getRoadY(t, h, horizonY));
+    }
+    roadPath.close();
 
     // High-tech asphalt gradient with deep contrast
     final asphaltPaint = Paint()
@@ -257,7 +317,23 @@ class ArcadeRoadPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, horizonY, w, h - horizonY));
     canvas.drawPath(roadPath, asphaltPaint);
 
-    // Center Wet-Asphalt Reflective Light Sheen
+    // Center Wet-Asphalt Reflective Light Sheen following road curve
+    final sheenPath = Path();
+    sheenPath.moveTo(getRoadCenterX(0.0, w) - getRoadWidth(0.0, w) * 0.22, horizonY);
+    for (int i = 1; i <= segments; i++) {
+      final t = i / segments;
+      final cx = getRoadCenterX(t, w);
+      final rw = getRoadWidth(t, w);
+      sheenPath.lineTo(cx - rw * 0.22, getRoadY(t, h, horizonY));
+    }
+    for (int i = segments; i >= 0; i--) {
+      final t = i / segments;
+      final cx = getRoadCenterX(t, w);
+      final rw = getRoadWidth(t, w);
+      sheenPath.lineTo(cx + rw * 0.22, getRoadY(t, h, horizonY));
+    }
+    sheenPath.close();
+
     final sheenPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.centerLeft,
@@ -270,10 +346,10 @@ class ArcadeRoadPainter extends CustomPainter {
           Colors.transparent,
         ],
         stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
-      ).createShader(Rect.fromLTWH(roadBottomLeft, horizonY, roadBottomRight - roadBottomLeft, h - horizonY));
-    canvas.drawPath(roadPath, sheenPaint);
+      ).createShader(Rect.fromLTWH(0, horizonY, w, h - horizonY));
+    canvas.drawPath(sheenPath, sheenPaint);
 
-    // Subtle Road Surface Motion Grit Lines
+    // Subtle Road Surface Motion Grit Lines across curved slices
     final gritPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.038)
       ..strokeWidth = 1.0
@@ -283,24 +359,16 @@ class ArcadeRoadPainter extends CustomPainter {
     for (int i = 0; i < totalGritSteps; i++) {
       final progress = ((i + scrollOffset * 1.6) % totalGritSteps) / totalGritSteps;
       final t = progress * progress; // quadratic perspective curve
-      final y = horizonY + (h - horizonY) * t;
+      final y = getRoadY(t, h, horizonY);
 
-      final xLeft = roadTopLeft + (roadBottomLeft - roadTopLeft) * t;
-      final xRight = roadTopRight + (roadBottomRight - roadTopRight) * t;
+      final lx = getRoadLeftX(t, w);
+      final rx = getRoadRightX(t, w);
 
-      canvas.drawLine(Offset(xLeft, y), Offset(xRight, y), gritPaint);
+      canvas.drawLine(Offset(lx, y), Offset(rx, y), gritPaint);
     }
   }
 
-  void _drawRumbleStrips(
-    Canvas canvas,
-    double topY,
-    double bottomY,
-    double topLeft,
-    double topRight,
-    double bottomLeft,
-    double bottomRight,
-  ) {
+  void _drawRumbleStrips(Canvas canvas, double w, double h, double horizonY) {
     const int totalCurbs = 26;
     final redCurbPaint = Paint()..color = const Color(0xFFFF2A4D);
     final whiteCurbPaint = Paint()..color = Colors.white.withValues(alpha: 0.9);
@@ -314,8 +382,8 @@ class ArcadeRoadPainter extends CustomPainter {
       final t0 = p0 * p0;
       final t1 = p1 * p1;
 
-      final y0 = topY + (bottomY - topY) * t0;
-      final y1 = topY + (bottomY - topY) * t1;
+      final y0 = getRoadY(t0, h, horizonY);
+      final y1 = getRoadY(t1, h, horizonY);
 
       final curbWidth0 = 3.0 + (14.0 * t0);
       final curbWidth1 = 3.0 + (14.0 * t1);
@@ -326,8 +394,8 @@ class ArcadeRoadPainter extends CustomPainter {
       final rightPaint = isEven ? cyanCurbPaint : whiteCurbPaint;
 
       // Left Verge Rumble Kerb
-      final lx0 = topLeft + (bottomLeft - topLeft) * t0;
-      final lx1 = topLeft + (bottomLeft - topLeft) * t1;
+      final lx0 = getRoadLeftX(t0, w);
+      final lx1 = getRoadLeftX(t1, w);
       final leftCurbPath = Path()
         ..moveTo(lx0 - curbWidth0, y0)
         ..lineTo(lx0, y0)
@@ -337,8 +405,8 @@ class ArcadeRoadPainter extends CustomPainter {
       canvas.drawPath(leftCurbPath, leftPaint);
 
       // Right Verge Rumble Kerb
-      final rx0 = topRight + (bottomRight - topRight) * t0;
-      final rx1 = topRight + (bottomRight - topRight) * t1;
+      final rx0 = getRoadRightX(t0, w);
+      final rx1 = getRoadRightX(t1, w);
       final rightCurbPath = Path()
         ..moveTo(rx0, y0)
         ..lineTo(rx0 + curbWidth0, y0)
@@ -349,16 +417,8 @@ class ArcadeRoadPainter extends CustomPainter {
     }
   }
 
-  void _drawGuardrailsAndBarriers(
-    Canvas canvas,
-    double topY,
-    double bottomY,
-    double topLeft,
-    double topRight,
-    double bottomLeft,
-    double bottomRight,
-  ) {
-    // 1. 3D Guardrail Vertical Support Posts spaced along track
+  void _drawGuardrailsAndBarriers(Canvas canvas, double w, double h, double horizonY) {
+    // 1. 3D Guardrail Vertical Support Posts along curved boundary
     final postPaint = Paint()
       ..color = const Color(0xFF384358)
       ..strokeWidth = 2.0;
@@ -367,19 +427,26 @@ class ArcadeRoadPainter extends CustomPainter {
     for (int i = 0; i < totalPosts; i++) {
       final p = ((i + scrollOffset * 0.8) % totalPosts) / totalPosts;
       final t = p * p;
-      final y = topY + (bottomY - topY) * t;
+      final y = getRoadY(t, h, horizonY);
       final postHeight = 6.0 + (26.0 * t);
 
       // Left post
-      final lx = topLeft + (bottomLeft - topLeft) * t;
+      final lx = getRoadLeftX(t, w);
       canvas.drawLine(Offset(lx - 2, y), Offset(lx - 2, y - postHeight), postPaint);
 
       // Right post
-      final rx = topRight + (bottomRight - topRight) * t;
+      final rx = getRoadRightX(t, w);
       canvas.drawLine(Offset(rx + 2, y), Offset(rx + 2, y - postHeight), postPaint);
     }
 
-    // 2. Continuous Left Neon Barrier (Cyber Cyan)
+    // 2. Continuous Left Neon Barrier (Cyber Cyan) following road curve
+    const int curveSteps = 24;
+    final leftPath = Path()..moveTo(getRoadLeftX(0.0, w), horizonY);
+    for (int i = 1; i <= curveSteps; i++) {
+      final t = i / curveSteps;
+      leftPath.lineTo(getRoadLeftX(t, w), getRoadY(t, h, horizonY));
+    }
+
     final leftGlow = Paint()
       ..color = const Color(0xFF00F0FF).withValues(alpha: 0.5)
       ..strokeWidth = 6.0
@@ -391,10 +458,16 @@ class ArcadeRoadPainter extends CustomPainter {
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
-    canvas.drawLine(Offset(topLeft, topY), Offset(bottomLeft, bottomY), leftGlow);
-    canvas.drawLine(Offset(topLeft, topY), Offset(bottomLeft, bottomY), leftSolid);
+    canvas.drawPath(leftPath, leftGlow);
+    canvas.drawPath(leftPath, leftSolid);
 
-    // 3. Continuous Right Neon Barrier (Electric Red)
+    // 3. Continuous Right Neon Barrier (Electric Red) following road curve
+    final rightPath = Path()..moveTo(getRoadRightX(0.0, w), horizonY);
+    for (int i = 1; i <= curveSteps; i++) {
+      final t = i / curveSteps;
+      rightPath.lineTo(getRoadRightX(t, w), getRoadY(t, h, horizonY));
+    }
+
     final rightGlow = Paint()
       ..color = const Color(0xFFFF1E44).withValues(alpha: 0.5)
       ..strokeWidth = 6.0
@@ -406,23 +479,12 @@ class ArcadeRoadPainter extends CustomPainter {
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
-    canvas.drawLine(Offset(topRight, topY), Offset(bottomRight, bottomY), rightGlow);
-    canvas.drawLine(Offset(topRight, topY), Offset(bottomRight, bottomY), rightSolid);
+    canvas.drawPath(rightPath, rightGlow);
+    canvas.drawPath(rightPath, rightSolid);
   }
 
-  void _drawLaneDividersAndStuds(
-    Canvas canvas,
-    double topY,
-    double bottomY,
-    double topLeft,
-    double topRight,
-    double bottomLeft,
-    double bottomRight,
-  ) {
-    final topRoadW = topRight - topLeft;
-    final botRoadW = bottomRight - bottomLeft;
-
-    // 3 equal lanes -> 2 divider lines
+  void _drawLaneDividersAndStuds(Canvas canvas, double w, double h, double horizonY) {
+    // 3 equal lanes -> 2 divider lines at fractions 1/3 and 2/3
     final dividerFractions = [1.0 / 3.0, 2.0 / 3.0];
 
     final dashPaint = Paint()
@@ -437,9 +499,6 @@ class ArcadeRoadPainter extends CustomPainter {
     const int totalDashes = 15;
 
     for (final fraction in dividerFractions) {
-      final lineTopX = topLeft + (topRoadW * fraction);
-      final lineBotX = bottomLeft + (botRoadW * fraction);
-
       for (int i = 0; i < totalDashes; i++) {
         final pStart = ((i + scrollOffset) % totalDashes) / totalDashes;
         final pEnd = pStart + (0.45 / totalDashes);
@@ -448,11 +507,11 @@ class ArcadeRoadPainter extends CustomPainter {
         final t0 = pStart * pStart;
         final t1 = pEnd * pEnd;
 
-        final y0 = topY + (bottomY - topY) * t0;
-        final y1 = topY + (bottomY - topY) * t1;
+        final y0 = getRoadY(t0, h, horizonY);
+        final y1 = getRoadY(t1, h, horizonY);
 
-        final x0 = lineTopX + (lineBotX - lineTopX) * t0;
-        final x1 = lineTopX + (lineBotX - lineTopX) * t1;
+        final x0 = getRoadLeftX(t0, w) + (getRoadWidth(t0, w) * fraction);
+        final x1 = getRoadLeftX(t1, w) + (getRoadWidth(t1, w) * fraction);
 
         // Line thickness grows with perspective
         dashPaint.strokeWidth = 1.0 + (3.8 * t1);
@@ -461,8 +520,8 @@ class ArcadeRoadPainter extends CustomPainter {
         // Retroreflective cat's-eye road stud between dashes
         final studT = (t0 + t1) / 2.0;
         if (studT > 0.08) {
-          final sx = lineTopX + (lineBotX - lineTopX) * studT;
-          final sy = topY + (bottomY - topY) * studT;
+          final sx = getRoadLeftX(studT, w) + (getRoadWidth(studT, w) * fraction);
+          final sy = getRoadY(studT, h, horizonY);
           final studRadius = 1.0 + (2.2 * studT);
 
           canvas.drawCircle(Offset(sx, sy), studRadius * 1.5, studGlow);
@@ -472,17 +531,8 @@ class ArcadeRoadPainter extends CustomPainter {
     }
   }
 
-  void _drawRoadsideGantriesAndScenery(
-    Canvas canvas,
-    double w,
-    double h,
-    double horizonY,
-    double roadTopLeft,
-    double roadTopRight,
-    double roadBottomLeft,
-    double roadBottomRight,
-  ) {
-    // Spaced overhead cyber gantries / streetlamp arches scrolling with progress
+  void _drawRoadsideGantriesAndScenery(Canvas canvas, double w, double h, double horizonY) {
+    // Spaced overhead cyber gantries / streetlamp arches scrolling with progress along curve
     const int totalGantries = 4;
     final gantryFramePaint = Paint()
       ..color = const Color(0xFF202A3C)
@@ -498,13 +548,13 @@ class ArcadeRoadPainter extends CustomPainter {
       final t = p * p;
       if (t < 0.04 || t > 0.98) continue;
 
-      final y = horizonY + (h - horizonY) * t;
+      final y = getRoadY(t, h, horizonY);
       final archH = 22.0 + (90.0 * t);
 
-      final lx = roadTopLeft + (roadBottomLeft - roadTopLeft) * t - (18.0 * t);
-      final rx = roadTopRight + (roadBottomRight - roadTopRight) * t + (18.0 * t);
+      final lx = getRoadLeftX(t, w) - (18.0 * t);
+      final rx = getRoadRightX(t, w) + (18.0 * t);
 
-      // Overhead arch gantry spanning the road
+      // Overhead arch gantry spanning the curved road
       final archPath = Path()
         ..moveTo(lx, y)
         ..lineTo(lx, y - archH)
@@ -512,8 +562,13 @@ class ArcadeRoadPainter extends CustomPainter {
         ..lineTo(rx, y);
       canvas.drawPath(archPath, gantryFramePaint);
 
-      // Downward road illumination pool from overhead lamps
-      final poolRect = Rect.fromCenter(center: Offset((lx + rx) / 2, y), width: (rx - lx) * 0.8, height: 18.0 * t + 8.0);
+      // Downward road illumination pool from overhead lamps centered on road
+      final poolCenterX = (lx + rx) / 2;
+      final poolRect = Rect.fromCenter(
+        center: Offset(poolCenterX, y),
+        width: (rx - lx) * 0.8,
+        height: 18.0 * t + 8.0,
+      );
       canvas.drawOval(poolRect, lampLightPaint);
 
       // Gantry status beacon lights
@@ -545,14 +600,14 @@ class ArcadeRoadPainter extends CustomPainter {
       final t0 = startProgress * startProgress;
       final t1 = endProgress * endProgress;
 
-      final y0 = horizonY + (h - horizonY) * t0;
-      final y1 = horizonY + (h - horizonY) * t1;
+      final y0 = getRoadY(t0, h, horizonY);
+      final y1 = getRoadY(t1, h, horizonY);
 
       final spread0 = (w * 0.22) + (rng.nextDouble() * w * 0.25);
       final spread1 = spread0 * (1.0 + 1.2 * t1);
 
-      final x0 = (w / 2) + (side * spread0);
-      final x1 = (w / 2) + (side * spread1);
+      final x0 = getRoadCenterX(t0, w) + (side * spread0);
+      final x1 = getRoadCenterX(t1, w) + (side * spread1);
 
       canvas.drawLine(Offset(x0, y0), Offset(x1, y1), streakPaint);
     }
@@ -578,6 +633,7 @@ class ArcadeRoadPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant ArcadeRoadPainter oldDelegate) {
     return oldDelegate.scrollOffset != scrollOffset ||
-        oldDelegate.playerSpeedMph != playerSpeedMph;
+        oldDelegate.playerSpeedMph != playerSpeedMph ||
+        oldDelegate.curveOffset != curveOffset;
   }
 }

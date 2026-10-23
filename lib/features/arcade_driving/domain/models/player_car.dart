@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 /// Player car physics and state for the arcade driving prototype.
@@ -72,15 +73,26 @@ class PlayerCar {
     topSpeedMph = 0.0;
   }
 
-  /// Calculates the 2D bounding rectangle in screen coordinates
-  Rect getBoundingRect(double screenWidth, double screenHeight) {
-    // Road center is middle of screen width
-    final roadWidth = screenWidth * 0.72;
-    final carWidth = roadWidth * 0.17;
+  /// Calculates the 2D bounding rectangle in screen coordinates, accounting for road curvature
+  Rect getBoundingRect(double screenWidth, double screenHeight, [double curveOffset = 0.0]) {
+    final horizonY = screenHeight * 0.18;
+    final centerY = screenHeight * 0.75;
+    final t = ((centerY - horizonY) / (screenHeight - horizonY)).clamp(0.0, 1.0);
+
+    // Lateral displacement of road centerline due to curvature at depth t
+    final maxHorizonShift = screenWidth * 0.28;
+    final curveShift = curveOffset * maxHorizonShift * math.pow(1.0 - t, 2.0);
+
+    // Perspective road width at car's vertical depth
+    final roadTopWidth = screenWidth * 0.32;
+    final roadBottomWidth = screenWidth * 0.78;
+    final roadWidthAtDepth = roadTopWidth + (roadBottomWidth - roadTopWidth) * t;
+
+    final carWidth = roadWidthAtDepth * 0.19;
     final carHeight = carWidth * 1.95;
 
-    final centerX = (screenWidth / 2) + (lanePosition * (roadWidth / 2 - carWidth * 0.6));
-    final centerY = screenHeight * 0.75;
+    final roadCenterX = (screenWidth / 2) + curveShift;
+    final centerX = roadCenterX + (lanePosition * (roadWidthAtDepth / 2 - carWidth * 0.6));
 
     return Rect.fromCenter(
       center: Offset(centerX, centerY),

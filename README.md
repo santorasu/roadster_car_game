@@ -12,6 +12,15 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### 🛣️ Feature 06: Dynamic Roads & Advanced Gameplay (Flutter Only)
+- **Pseudo-3D Curved Roads**: Smooth left and right dynamic road curvature based on quadratic depth perspective $(1 - t)^2$. The road curves naturally from the player's bumper towards the distant horizon.
+- **Continuous Road Transitions**: Gradual curve entry, sustained turns, and smooth return to straight roads using cubic smoothstep interpolation ($3t^2 - 2t^3$) with zero visual snapping or camera jerking.
+- **Aligned Environmental Effects**: Sliced road asphalt polygon, multi-segment road shoulders, red/white/cyan rumble kerb strips, continuous glowing neon barriers, dashed lane dividers, reflective cat's-eye studs, and overhead gantry arches curve seamlessly with road geometry. Sky parallax counter-shifts inversely for enhanced depth.
+- **Dynamic Driving Physics & Centrifugal Drift**: Lateral physics apply realistic centrifugal force ($a_{\text{centrifugal}} = -\text{curvature} \times \frac{v}{v_{\text{max}}} \times 1.60$) requiring driver counter-steering on high-speed curves. Vehicle roll tilt combines steering input with road banking.
+- **Arcade Sector Progression System**: 7 distinct track sectors over a 3,000-meter course (Neon Boulevard, Cyber Sweep, Hyperflux Connector, Pulse Highway, Data Chicane S-curve, Circuit Overpass, Hyperdrive Matrix) with distance-based difficulty scaling, traffic density multipliers, and sector completion score bonuses.
+- **Dynamic HUD Sector Notification**: Sleek glowing cyan HUD announcement banner with directional turn indicators appearing during sector transitions.
+- **Depth-Accurate Hitbox Alignment**: Player and obstacle AABB hitboxes are computed using the identical depth-shifted perspective curve formulas, guaranteeing 100% collision precision without visual desynchronization.
+
 ### 🎨 Feature 05: Enhanced Car & Road Visuals (Flutter Only)
 - **Detailed Roadster Artwork**: Supercar proportions with flared wheel arches, coke-bottle waistline, carbon aero splitter/skirts/diffuser, 4 visible performance tires with brake calipers, tinted glass canopy with cockpit yoke silhouette, laser projector headlights with cyan DRL ribbons, full-width taillight blade, active spoiler, and underglow ground illumination.
 - **Richer Road Environment**: Multi-segment road shoulders, alternating high-contrast red/white and cyan rumble kerbs, 3D guardrail posts with continuous neon crash barriers, scrolling overhead streetlamp gantries casting downward illumination pools, and dashed lane dividers with drop-shadows and reflective amber cat's-eye road studs.
@@ -72,7 +81,7 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 # Static analysis (0 errors, 0 warnings, 0 deprecations)
 flutter analyze
 
-# Automated widget, audio, handling, visual, and bridge unit tests (37 passed)
+# Automated widget, audio, handling, visual, and dynamic road unit tests (48 passed across 6 suites)
 flutter test
 ```
 

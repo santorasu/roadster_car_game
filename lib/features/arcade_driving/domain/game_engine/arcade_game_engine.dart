@@ -4,6 +4,7 @@ import '../models/arcade_game_state.dart';
 import '../models/game_particle.dart';
 import '../models/obstacle_vehicle.dart';
 import '../models/player_car.dart';
+import '../models/road_section.dart';
 
 /// Pure Dart game engine handling arcade physics, obstacle spawning,
 /// collision detection, scoring, and particle life cycles.
@@ -12,6 +13,7 @@ class ArcadeGameEngine {
   final ArcadeGameState state = ArcadeGameState();
   final List<ObstacleVehicle> obstacles = [];
   final List<GameParticle> particles = [];
+  final TrackProgressionManager trackManager = TrackProgressionManager();
 
   final math.Random _random = math.Random();
 
@@ -95,6 +97,12 @@ class ArcadeGameEngine {
     player.speedMph = 35.0; // Initial rolling start
     state.reset();
     state.highScore = prevHighScore;
+    state.currentSectorName = trackManager.sections.isNotEmpty
+        ? trackManager.sections.first.name
+        : 'NEON HIGHWAY';
+    state.currentCurvature = 0.0;
+    state.sectorNotificationTimer = 0.0;
+    state.sectorIndex = 1;
     obstacles.clear();
     particles.clear();
     roadScrollOffset = 0.0;
@@ -108,6 +116,24 @@ class ArcadeGameEngine {
     // 0. Update Collision Recovery Window
     if (player.collisionRecoveryTimer > 0.0) {
       player.collisionRecoveryTimer = math.max(0.0, player.collisionRecoveryTimer - dt);
+    }
+
+    // Dynamic Road Curvature & Track Progression
+    final currentCurvature = trackManager.computeCurvatureAt(player.distanceTraveledMeters);
+    state.currentCurvature = currentCurvature;
+
+    final activeSection = trackManager.getSectionForDistance(player.distanceTraveledMeters);
+    final sectorIndex = trackManager.getSectorIndex(player.distanceTraveledMeters);
+
+    if (sectorIndex != state.sectorIndex) {
+      state.sectorIndex = sectorIndex;
+      state.currentSectorName = activeSection.name;
+      state.sectorNotificationTimer = 2.5;
+      state.score += activeSection.bonusPoints;
+    }
+
+    if (state.sectorNotificationTimer > 0.0) {
+      state.sectorNotificationTimer = math.max(0.0, state.sectorNotificationTimer - dt);
     }
 
     // 1. Progressive Acceleration & Braking Curves
@@ -140,6 +166,15 @@ class ArcadeGameEngine {
     const steerInertiaRate = 12.0;
     final blend = 1.0 - math.exp(-steerInertiaRate * dt);
     player.lateralVelocity += (targetLateralVelocity - player.lateralVelocity) * blend;
+
+    // Road Curvature Centrifugal Force
+    // Curvature > 0 (right bend) pulls car outward to the left (-lateralVelocity)
+    // Curvature < 0 (left bend) pulls car outward to the right (+lateralVelocity)
+    if (currentCurvature.abs() > 0.01 && player.speedMph > 5.0) {
+      final speedRatio = (player.speedMph / topSpeed).clamp(0.0, 1.0);
+      final centrifugalForce = -currentCurvature * speedRatio * 1.60;
+      player.lateralVelocity += centrifugalForce * dt;
+    }
 
     // Controlled return toward neutral center when steering input is released
     if (player.steerInput == 0.0) {
@@ -178,10 +213,11 @@ class ArcadeGameEngine {
       }
     }
 
-    // Dynamic vehicle roll tilt angle
+    // Dynamic vehicle roll tilt angle (combining steering roll and road banking)
+    final curveRoll = -currentCurvature * 0.06;
     final targetRoll = (player.steerInput != 0.0)
-        ? (player.steerInput * 0.12)
-        : (player.lateralVelocity / baseSteeringSpeed) * 0.08;
+        ? (player.steerInput * 0.12 + curveRoll)
+        : ((player.lateralVelocity / baseSteeringSpeed) * 0.08 + curveRoll);
     final rollBlend = 1.0 - math.exp(-10.0 * dt);
     player.rollAngle += (targetRoll - player.rollAngle) * rollBlend;
 
@@ -210,17 +246,16 @@ class ArcadeGameEngine {
       state.highScore = state.score;
     }
 
-    // 6. Spawn Obstacles
+    // 6. Spawn Obstacles with Section-based Difficulty Progression
     _spawnTimer += dt;
-    // Spawn faster as score increases
-    final dynamicInterval = (_spawnInterval - (state.distanceMeters / 5000.0) * 0.5).clamp(0.9, 2.2);
+    final dynamicInterval = (_spawnInterval / activeSection.trafficDensityMultiplier - (state.distanceMeters / 6000.0) * 0.35).clamp(0.85, 2.2);
     if (_spawnTimer >= dynamicInterval) {
       _spawnTimer = 0.0;
       _spawnObstacle();
     }
 
-    // 6. Update Obstacles & Check Collisions
-    final playerRect = player.getBoundingRect(screenWidth, screenHeight);
+    // 6. Update Obstacles & Check Collisions (Passing road curvature to bounding rects)
+    final playerRect = player.getBoundingRect(screenWidth, screenHeight, currentCurvature);
 
     for (int i = obstacles.length - 1; i >= 0; i--) {
       final obstacle = obstacles[i];
@@ -232,7 +267,7 @@ class ArcadeGameEngine {
 
       // Check collision if obstacle is near player's vertical zone
       if (!obstacle.hasCollided && obstacle.yProgress > 0.60 && obstacle.yProgress < 0.90) {
-        final obstacleRect = obstacle.getBoundingRect(screenWidth, screenHeight);
+        final obstacleRect = obstacle.getBoundingRect(screenWidth, screenHeight, currentCurvature);
         if (playerRect.overlaps(obstacleRect)) {
           _handleCollision(obstacle, playerRect, obstacleRect);
         }

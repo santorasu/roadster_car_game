@@ -14,6 +14,10 @@ class ArcadeGameState {
   double comboMultiplier;
   int collisionsCount;
   double screenShakeIntensity;
+  String currentSectorName;
+  double currentCurvature;
+  double sectorNotificationTimer;
+  int sectorIndex;
 
   ArcadeGameState({
     this.status = ArcadeGameStatus.ready,
@@ -24,6 +28,10 @@ class ArcadeGameState {
     this.comboMultiplier = 1.0,
     this.collisionsCount = 0,
     this.screenShakeIntensity = 0.0,
+    this.currentSectorName = 'NEON HIGHWAY',
+    this.currentCurvature = 0.0,
+    this.sectorNotificationTimer = 0.0,
+    this.sectorIndex = 1,
   });
 
   void reset() {
@@ -34,5 +42,9 @@ class ArcadeGameState {
     comboMultiplier = 1.0;
     collisionsCount = 0;
     screenShakeIntensity = 0.0;
+    currentSectorName = 'NEON HIGHWAY';
+    currentCurvature = 0.0;
+    sectorNotificationTimer = 0.0;
+    sectorIndex = 1;
   }
 }

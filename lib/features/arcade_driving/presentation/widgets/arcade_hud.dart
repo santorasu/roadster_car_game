@@ -234,8 +234,62 @@ class ArcadeHud extends StatelessWidget {
                 ],
               ),
 
+              // Dynamic Sector Transition Announcement Banner
+              if (state.sectorNotificationTimer > 0.0) ...[
+                SizedBox(height: 4.h),
+                Center(
+                  child: Container(
+                    key: const Key('hud_sector_announcement_banner'),
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF00F0FF).withValues(alpha: 0.25),
+                          const Color(0xFF00E5FF).withValues(alpha: 0.92),
+                          const Color(0xFF00F0FF).withValues(alpha: 0.25),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(6.r),
+                      border: Border.all(
+                        color: const Color(0xFF00F0FF),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00F0FF).withValues(alpha: 0.6),
+                          blurRadius: 10.r,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          state.currentCurvature > 0.05
+                              ? Icons.turn_right_rounded
+                              : (state.currentCurvature < -0.05
+                                  ? Icons.turn_left_rounded
+                                  : Icons.straight_rounded),
+                          size: 14.r,
+                          color: Colors.black,
+                        ),
+                        SizedBox(width: 6.w),
+                        Text(
+                          'SECTOR 0${state.sectorIndex}: ${state.currentSectorName}',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
 
-              SizedBox(height: 8.h),
+              SizedBox(height: 6.h),
 
               // Speedometer Arc, Power Gauge & Hull Bar Row
               Row(

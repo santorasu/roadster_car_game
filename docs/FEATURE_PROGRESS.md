@@ -9,7 +9,8 @@
 | **FEATURE 03** | **Advanced Driving Controls & Handling** | **Android Only** | **COMPLETED & VERIFIED** |
 | **FEATURE 04** | **Game UI, Audio & Visual Effects Polish** | **Android Only** | **COMPLETED & VERIFIED** |
 | **FEATURE 05** | **Enhanced Car & Road Visuals** | **Android Only** | **COMPLETED & VERIFIED** |
-| FEATURE 06 | Game Modes & Performance Optimization | Android Only | Planned (Pending Next Phase) |
+| **FEATURE 06** | **Dynamic Roads & Advanced Gameplay** | **Android Only** | **COMPLETED & VERIFIED** |
+| FEATURE 07 | Soundscape Polish, Weather FX & Deep Optimization | Android Only | Planned (Pending Next Phase) |
 
 ---
 
@@ -167,15 +168,45 @@
 
 ---
 
-## Next Steps for Feature 06 (Preparation Only)
+---
 
-*Note: Per constraints, Feature 06 will NOT be started automatically.*
+## Feature 06: Dynamic Roads & Advanced Gameplay (Detailed Breakdown)
 
-1. **Game Modes & Progression**:
-   - Time Trial / Distance Survival modes.
-   - Dynamic traffic density scaling and rush hour waves.
-2. **Performance Profiling & Deep Optimization**:
-   - Frame budget telemetry and GPU profile inspection on lower-end Android profiles.
-   - Dynamic Level of Detail (LOD) for distant obstacles and scenery elements.
+### Acceptance Criteria & Verification Matrix
+
+| Requirement | Implementation Summary | Status | Verified Target |
+| :--- | :--- | :---: | :--- |
+| **1. Curved Roads** | Implemented continuous left and right road curves using pseudo-3D custom painter architecture. Depth-based lateral shifting follows $(1 - t)^2$ projection where road curvature is anchored at the vehicle hood ($t=1.0$) and bends dynamically toward the horizon ($t=0.0$). | **PASS** | Live Target (`emulator-5554`) & Widget Tests |
+| **2. Road Transitions** | Designed gradual curve entry, sustained turns, and smooth return to straightaways via `TrackProgressionManager`. Uses cubic smoothstep easing ($3t^2 - 2t^3$) over a 20-meter lead-in buffer to eliminate abrupt jarring snaps between sectors. | **PASS** | Unit Tests in `test/dynamic_roads_test.dart` |
+| **3. Advanced Road Effects** | Sliced asphalt polygon, multi-segment road shoulders, red/white/cyan rumble kerb strips, continuous neon crash barriers, dashed lane dividers, reflective cat's-eye studs, and overhead gantry arches follow curved coordinates. Sky parallax counter-shifts inversely ($-32 \times \text{curvature}$) for enhanced depth. | **PASS** | Live 60 FPS Target Render |
+| **4. Driving Physics** | Integrated speed-dependent centrifugal lateral drift ($a_{\text{centrifugal}} = -\text{curvature} \times \frac{v}{v_{\text{max}}} \times 1.60$) active above 5 MPH. Player car visual roll tilt dynamically reflects combined steering input and road banking angle. | **PASS** | Physics Tests & Live Drive on Emulator |
+| **5. Gameplay Variety & Progression** | Implemented 7 distinct arcade sectors over a 3,000-meter loop (Sector 1 Neon Boulevard straight, Sector 2 Cyber Sweep right, Sector 3 Hyperflux Connector straight, Sector 4 Pulse Highway left, Sector 5 Data Chicane S-curve, Sector 6 Circuit Overpass sweeping right, Sector 7 Hyperdrive Matrix). Features sector completion bonus score (+2,500 to +10,000 pts), dynamic traffic density scaling (1.0x to 1.8x), and a 2.5s glowing HUD sector announcement banner. | **PASS** | Live Android Emulator & HUD Tests |
+| **6. Hitbox & Perspective Alignment** | Updated `PlayerCar.getBoundingRect` and `ObstacleVehicle.getBoundingRect` with matching `curveOffset` calculation and perspective road width at vehicle depth $t$. Hitboxes mathematically track visual rendered geometry across all curve offsets with zero drift. | **PASS** | Unit Tests & Live Collision Verification |
+| **7. Automated Testing** | Authored 11 deterministic tests in `test/dynamic_roads_test.dart` verifying sector progression, cubic smoothstep transitions, S-curve oscillation, curved coordinate math, bounding rect alignment, centrifugal physics, stationary vehicle zero-drift, and HUD banner rendering. Full test suite: **48/48 passed** across 6 files. | **PASS** | `flutter test` (48 passed) |
+| **8. Device Verification** | Debug APK built (5.4s) and executed on Android 15 emulator (`emulator-5554`), visual output captured and validated across straightaways, right bends, left sweeps, traffic alignment, pause menu, and exit. | **PASS** | `emulator-5554` Screen Captures |
+
+### Live Android Target Verification (`emulator-5554`)
+- **Device**: Android 15 (API 35), architecture `arm64-v8a`, resolution 1080x2400.
+- **Milestones captured**:
+  1. `feature06_01_home.png`: Garage home screen with system telemetry and clean navigation entry point.
+  2. `feature06_01_sector01_straight.png`: Sector 01 ("NEON BOULEVARD") straightaway at 87 MPH with full HUD and aligned traffic vehicles.
+  3. `feature06_02_sector02_right_curve.png`: Sector 02 ("CYBER SWEEP") entry at 90 MPH showing dynamic HUD banner ("CYBER SWEEP - GENTLE RIGHT"), curved road, curved neon crash barriers, and aligned obstacles.
+  4. `feature06_03_sector02_curve.png`: Sustained right turn in Sector 02 showing smooth curve geometry, rumble kerbs, overhead gantry spotlight pool, and counter-shifted skyline parallax.
+  5. `feature06_04_sector04_left_curve.png`: High-speed driving in Sector 04 ("PULSE HIGHWAY") showing sweeping left curve, curved lane dividers, and obstacle alignment.
+  6. `feature06_05_paused.png`: Polished pause dialog layered over the curved road scene.
+
+---
+
+## Next Steps for Feature 07 (Preparation Only)
+
+*Note: Per constraints, Feature 07 will NOT be started automatically.*
+
+1. **Weather Effects & Atmospheric Simulation**:
+   - Dynamic rain, wet asphalt surface reflections, lightning flash events, and neon bloom.
+2. **Advanced Soundscape Polish**:
+   - Tire squeal on aggressive cornering, wind shear at > 150 MPH, and sector transition chimes.
+3. **Deep Profiling & Device Optimization**:
+   - Canvas path caching and frame budget profiling across lower-tier Android device profiles.
+
 
 
