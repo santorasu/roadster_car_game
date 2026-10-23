@@ -24,6 +24,15 @@ class PlayerCar {
   /// Visual tilt/roll angle during steering (radians)
   double rollAngle;
 
+  /// Dynamic lateral drift velocity (-1.0 to 1.0/s) for smooth inertia
+  double lateralVelocity;
+
+  /// Post-collision recovery/invulnerability timer (seconds)
+  double collisionRecoveryTimer;
+
+  /// Whether the vehicle is currently brushing against the road boundary
+  bool isAtRoadBoundary;
+
   /// Distance traveled in meters
   double distanceTraveledMeters;
 
@@ -39,6 +48,9 @@ class PlayerCar {
     this.isAccelerating = false,
     this.isBraking = false,
     this.rollAngle = 0.0,
+    this.lateralVelocity = 0.0,
+    this.collisionRecoveryTimer = 0.0,
+    this.isAtRoadBoundary = false,
     this.distanceTraveledMeters = 0.0,
     this.topSpeedMph = 0.0,
   });
@@ -53,6 +65,9 @@ class PlayerCar {
     isAccelerating = false;
     isBraking = false;
     rollAngle = 0.0;
+    lateralVelocity = 0.0;
+    collisionRecoveryTimer = 0.0;
+    isAtRoadBoundary = false;
     distanceTraveledMeters = 0.0;
     topSpeedMph = 0.0;
   }

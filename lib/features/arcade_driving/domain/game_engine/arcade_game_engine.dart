@@ -22,18 +22,42 @@ class ArcadeGameEngine {
   double _spawnTimer = 0.0;
   final double _spawnInterval = 1.8; // seconds between obstacles
 
-  // Constants
+  // Physics & Handling Constants
   static const double topSpeed = 250.0;
   static const double minSpeed = 20.0;
-  static const double accelerationRate = 85.0; // MPH per second
-  static const double brakingRate = 130.0; // MPH per second
-  static const double coastingDrag = 18.0; // MPH per second
-  static const double steeringSpeed = 2.4; // Lanes per second
+  static const double baseSteeringSpeed = 2.4; // Base lateral lanes per second
+  static const double naturalCenteringRate = 0.55; // Controlled auto-return to neutral
+  static const double boundaryVergeThreshold = 0.88; // Road verge starts here
+  static const double maxPlayableBoundary = 1.0; // Strict playable boundary limit
 
   // Lanes
   static const List<double> lanes = [-0.65, 0.0, 0.65];
 
   ArcadeGameEngine();
+
+  /// Computes progressive motor acceleration accounting for instant electric torque
+  /// and high-speed aerodynamic drag
+  double computeAccelerationRate(double speed) {
+    final speedRatio = (speed / topSpeed).clamp(0.0, 1.0);
+    // Instant torque at lower speeds (up to 95 MPH/s), progressively tapering
+    final motorTorque = 95.0 - (38.0 * math.pow(speedRatio, 0.65));
+    // Aerodynamic drag increases with velocity squared
+    final aeroDrag = 42.0 * math.pow(speedRatio, 2.0);
+    return math.max(6.0, motorTorque - aeroDrag);
+  }
+
+  /// Computes progressive braking rate with responsive bite and speed-proportional stopping
+  double computeBrakingRate(double speed) {
+    final speedRatio = (speed / topSpeed).clamp(0.0, 1.0);
+    return 75.0 + (75.0 * speedRatio);
+  }
+
+  /// Computes speed-sensitive steering sensitivity multiplier
+  double computeSpeedSteerRatio(double speed) {
+    final speedRatio = (speed / topSpeed).clamp(0.0, 1.0);
+    // 1.15 at low speeds for agile maneuvering, scaling down to 0.45 at 250 MPH for stability
+    return 1.15 - (0.70 * speedRatio);
+  }
 
   /// Starts or resumes the game
   void start() {
@@ -81,15 +105,23 @@ class ArcadeGameEngine {
   void tick(double dt, double screenWidth, double screenHeight) {
     if (state.status != ArcadeGameStatus.playing) return;
 
-    // 1. Update Player Speed & Physics
+    // 0. Update Collision Recovery Window
+    if (player.collisionRecoveryTimer > 0.0) {
+      player.collisionRecoveryTimer = math.max(0.0, player.collisionRecoveryTimer - dt);
+    }
+
+    // 1. Progressive Acceleration & Braking Curves
     if (player.isAccelerating) {
-      player.speedMph = (player.speedMph + accelerationRate * dt).clamp(0.0, topSpeed);
+      final accelRate = computeAccelerationRate(player.speedMph);
+      player.speedMph = (player.speedMph + accelRate * dt).clamp(0.0, topSpeed);
     } else if (player.isBraking) {
-      player.speedMph = (player.speedMph - brakingRate * dt).clamp(0.0, topSpeed);
+      final brakeRate = computeBrakingRate(player.speedMph);
+      player.speedMph = (player.speedMph - brakeRate * dt).clamp(0.0, topSpeed);
     } else {
-      // Coasting
+      // Natural progressive coasting drag
+      final coastDrag = 12.0 + (10.0 * (player.speedMph / topSpeed));
       if (player.speedMph > minSpeed) {
-        player.speedMph = (player.speedMph - coastingDrag * dt).clamp(minSpeed, topSpeed);
+        player.speedMph = (player.speedMph - coastDrag * dt).clamp(minSpeed, topSpeed);
       } else {
         player.speedMph = (player.speedMph + 10.0 * dt).clamp(0.0, minSpeed);
       }
@@ -100,22 +132,60 @@ class ArcadeGameEngine {
       player.topSpeedMph = player.speedMph;
     }
 
-    // 2. Update Steering & Roll Angle
-    if (player.steerInput != 0.0) {
-      // Speed factor makes steering sharper at mid speeds and stable at high speeds
-      final speedFactor = (player.speedMph / 100.0).clamp(0.4, 1.2);
-      player.lanePosition += player.steerInput * steeringSpeed * speedFactor * dt;
-      player.lanePosition = player.lanePosition.clamp(-1.0, 1.0);
+    // 2. Speed-Sensitive Steering & Smooth Lateral Inertia
+    final speedSteerRatio = computeSpeedSteerRatio(player.speedMph);
+    final targetLateralVelocity = player.steerInput * baseSteeringSpeed * speedSteerRatio;
 
-      // Visual car tilt
-      final targetRoll = player.steerInput * 0.12;
-      player.rollAngle += (targetRoll - player.rollAngle) * (dt * 10.0);
-    } else {
-      // Return roll to neutral
-      player.rollAngle += (0.0 - player.rollAngle) * (dt * 10.0);
+    // Frame-rate independent exponential smoothing for lateral inertia
+    const steerInertiaRate = 12.0;
+    final blend = 1.0 - math.exp(-steerInertiaRate * dt);
+    player.lateralVelocity += (targetLateralVelocity - player.lateralVelocity) * blend;
+
+    // Controlled return toward neutral center when steering input is released
+    if (player.steerInput == 0.0) {
+      player.lateralVelocity -= player.lanePosition * naturalCenteringRate * dt;
     }
 
-    // 3. Update Road Scrolling & Distance Traveled
+    // 3. Road-Boundary Handling & Soft Resistance
+    player.lanePosition += player.lateralVelocity * dt;
+
+    if (player.lanePosition.abs() >= boundaryVergeThreshold) {
+      player.isAtRoadBoundary = true;
+      final sign = player.lanePosition.sign;
+      final excess = player.lanePosition.abs() - boundaryVergeThreshold;
+
+      // Soft elastic boundary counter-force
+      player.lateralVelocity -= sign * (excess * 24.0 * dt);
+
+      // Boundary friction dampening
+      final vergeFriction = 35.0 * excess;
+      player.speedMph = math.max(minSpeed, player.speedMph - vergeFriction * dt);
+
+      // Spawn boundary contact sparks if moving at speed
+      if (player.speedMph > 40.0 && _random.nextDouble() < 0.45) {
+        _spawnBoundarySparks(sign, screenWidth, screenHeight);
+      }
+    } else {
+      player.isAtRoadBoundary = false;
+    }
+
+    // Strict boundary clamping so the vehicle never renders outside the playable road
+    player.lanePosition = player.lanePosition.clamp(-maxPlayableBoundary, maxPlayableBoundary);
+    if (player.lanePosition.abs() >= maxPlayableBoundary) {
+      // Cancel outward lateral momentum at the hard boundary
+      if (player.lanePosition * player.lateralVelocity > 0) {
+        player.lateralVelocity = 0.0;
+      }
+    }
+
+    // Dynamic vehicle roll tilt angle
+    final targetRoll = (player.steerInput != 0.0)
+        ? (player.steerInput * 0.12)
+        : (player.lateralVelocity / baseSteeringSpeed) * 0.08;
+    final rollBlend = 1.0 - math.exp(-10.0 * dt);
+    player.rollAngle += (targetRoll - player.rollAngle) * rollBlend;
+
+    // 4. Update Road Scrolling & Distance Traveled
     final speedRatio = player.speedMph / 100.0;
     roadScrollOffset = (roadScrollOffset + speedRatio * dt * 8.0) % 1.0;
 
@@ -124,7 +194,7 @@ class ArcadeGameEngine {
     player.distanceTraveledMeters += distanceDelta;
     state.distanceMeters = player.distanceTraveledMeters;
 
-    // 4. Update Score & Multipliers
+    // 5. Update Score & Multipliers
     if (player.speedMph > 200.0) {
       state.comboMultiplier = 3.0;
     } else if (player.speedMph > 140.0) {
@@ -140,7 +210,7 @@ class ArcadeGameEngine {
       state.highScore = state.score;
     }
 
-    // 5. Spawn Obstacles
+    // 6. Spawn Obstacles
     _spawnTimer += dt;
     // Spawn faster as score increases
     final dynamicInterval = (_spawnInterval - (state.distanceMeters / 5000.0) * 0.5).clamp(0.9, 2.2);
@@ -229,6 +299,11 @@ class ArcadeGameEngine {
   }
 
   void _handleCollision(ObstacleVehicle obstacle, Rect playerRect, Rect obstacleRect) {
+    // If vehicle is in post-collision recovery, ignore subsequent damage frames
+    if (player.collisionRecoveryTimer > 0.0) {
+      return;
+    }
+
     obstacle.hasCollided = true;
     state.collisionsCount++;
 
@@ -250,7 +325,13 @@ class ArcadeGameEngine {
     }
 
     player.health = math.max(0.0, player.health - damage);
-    player.speedMph = math.max(minSpeed, player.speedMph * 0.55);
+    // Progressive speed reduction with vehicle handling stabilization
+    player.speedMph = math.max(minSpeed, player.speedMph * 0.65);
+    // Dampen lateral velocity to stabilize vehicle after impact
+    player.lateralVelocity *= 0.25;
+    // Activate collision recovery window (0.85s)
+    player.collisionRecoveryTimer = 0.85;
+
     state.comboMultiplier = 1.0;
     state.screenShakeIntensity = 1.0;
 
@@ -282,6 +363,26 @@ class ArcadeGameEngine {
       if (state.score > state.highScore) {
         state.highScore = state.score;
       }
+    }
+  }
+
+  void _spawnBoundarySparks(double sign, double screenWidth, double screenHeight) {
+    final roadWidth = screenWidth * 0.72;
+    final contactX = (screenWidth / 2) + (sign * (roadWidth / 2));
+    final contactY = screenHeight * 0.75;
+
+    for (int i = 0; i < 3; i++) {
+      particles.add(GameParticle(
+        x: contactX,
+        y: contactY,
+        vx: -sign * (40.0 + _random.nextDouble() * 90.0),
+        vy: -30.0 - (_random.nextDouble() * 60.0),
+        life: 1.0,
+        maxLife: 0.22,
+        size: 2.2,
+        color: const Color(0xFFFF9100),
+        type: ParticleType.collisionSpark,
+      ));
     }
   }
 

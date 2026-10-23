@@ -60,6 +60,11 @@ class ArcadeCarPainter extends CustomPainter {
     // 6. LED Headlights & Full-Width Neon Taillight
     _drawLights(canvas, carWidth, carHeight);
 
+    // 7. Post-Collision Recovery Aura (if recovering)
+    if (player.collisionRecoveryTimer > 0.0) {
+      _drawRecoveryAura(canvas, carWidth, carHeight);
+    }
+
     canvas.restore();
   }
 
@@ -243,12 +248,29 @@ class ArcadeCarPainter extends CustomPainter {
     canvas.drawPath(tailPath, tailCorePaint);
   }
 
+  void _drawRecoveryAura(Canvas canvas, double cw, double ch) {
+    final auraPaint = Paint()
+      ..color = const Color(0xFF00E5FF).withValues(alpha: 0.45)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset.zero, width: cw * 1.25, height: ch * 1.15),
+        const Radius.circular(16),
+      ),
+      auraPaint,
+    );
+  }
+
   @override
   bool shouldRepaint(covariant ArcadeCarPainter oldDelegate) {
     return oldDelegate.player.lanePosition != player.lanePosition ||
         oldDelegate.player.speedMph != player.speedMph ||
         oldDelegate.player.rollAngle != player.rollAngle ||
         oldDelegate.player.isBraking != player.isBraking ||
-        oldDelegate.player.isAccelerating != player.isAccelerating;
+        oldDelegate.player.isAccelerating != player.isAccelerating ||
+        oldDelegate.player.collisionRecoveryTimer != player.collisionRecoveryTimer ||
+        oldDelegate.player.isAtRoadBoundary != player.isAtRoadBoundary;
   }
 }

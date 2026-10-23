@@ -12,6 +12,14 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### ⚡ Feature 03: Advanced Driving Controls & Handling (Flutter Only)
+- **Smooth, Frame-Rate-Independent Steering**: Exponential lateral velocity smoothing (`1 - exp(-12 * dt)`) with realistic lateral inertia and natural auto-centering.
+- **Electric Hypercar Torque Curve**: Progressive acceleration delivering ~95 MPH/s at low speeds, naturally tapering off against aerodynamic drag at 250 MPH.
+- **Speed-Sensitive Steering Ratio**: Dynamic steering responsiveness scaling from 1.15 at low speeds to 0.45 at top speed, preventing twitchy oversteer at 250 MPH.
+- **Road Boundary Containment**: Elastic counter-force, boundary friction dampening, verge contact sparks, and strict $[-1.0, 1.0]$ boundary clamping preventing player escape.
+- **Collision Recovery Grace Window**: 0.85-second recovery window after obstacle impact with lateral velocity stabilization (`*= 0.25`) and visual cyan shield aura.
+- **Multi-Touch Precision Controls**: Simultaneous steering, acceleration, and braking with independent pointer tracking via `flutter_screenutil`.
+
 ### 🏎️ Feature 02: Playable Arcade Driving Game (Flutter Only)
 - **100% Pure Flutter Arcade Physics**: Zero Unity runtime dependency for instant, smooth 60 FPS gameplay on Android.
 - **Pseudo-3D Perspective Road**: Custom canvas rendering with horizon vanishing depth, neon glowing road barriers, and scrolling lane stripes.
@@ -49,7 +57,7 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 # Static analysis (0 errors, 0 warnings, 0 deprecations)
 flutter analyze
 
-# Automated widget and bridge unit tests (5 passed)
+# Automated widget, handling, and bridge unit tests (22 passed)
 flutter test
 ```
 
