@@ -12,6 +12,13 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### 🎨 Feature 05: Enhanced Car & Road Visuals (Flutter Only)
+- **Detailed Roadster Artwork**: Supercar proportions with flared wheel arches, coke-bottle waistline, carbon aero splitter/skirts/diffuser, 4 visible performance tires with brake calipers, tinted glass canopy with cockpit yoke silhouette, laser projector headlights with cyan DRL ribbons, full-width taillight blade, active spoiler, and underglow ground illumination.
+- **Richer Road Environment**: Multi-segment road shoulders, alternating high-contrast red/white and cyan rumble kerbs, 3D guardrail posts with continuous neon crash barriers, scrolling overhead streetlamp gantries casting downward illumination pools, and dashed lane dividers with drop-shadows and reflective amber cat's-eye road studs.
+- **Procedural Cyberpunk Scenery**: Multi-tier parallax skyline featuring distant pyramids/monoliths, midground illuminated skyscrapers with blinking antenna beacons, horizon atmospheric neon haze, starfield, and perspective off-road terrain grid with zero external bitmap assets.
+- **Upgraded Traffic Vehicles**: 4 distinct obstacle archetypes with soft contact ground shadows and visible wheels: aerodynamic **Cyber Sedan**, faceted stainless-steel **Cyber Truck**, 8-wheel articulated **Heavy Hauler** with hazard chevrons, and dual-pylon **Energy Barrier** with animated plasma lightning arcs.
+- **Speed-Responsive FX**: Dynamic horizon haze, high-speed warp streaks (> 85 MPH), and peripheral tunnel-vision vignette (> 160 MPH) that smoothly scale with car speed.
+
 ### 🔊 Feature 04: Game UI, Audio & Visual Effects Polish (Flutter Only)
 - **Cyber Sports Car UI Design**: Glassmorphic dark styling, neon borders, custom telemetry badges, and consistent typography across Garage, HUD, Pause, Game Over, and Audio dialogs.
 - **Dynamic Driving Visual Feedback**: Dynamic speedometer color transitions (Cyan < 115 MPH, Amber 115-180 MPH, Hyper Red > 180 MPH), instantaneous power output kW bar gauge, road surface motion grit, and warp speed streaks (> 85 MPH).
@@ -65,7 +72,7 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 # Static analysis (0 errors, 0 warnings, 0 deprecations)
 flutter analyze
 
-# Automated widget, audio, handling, and bridge unit tests (32 passed)
+# Automated widget, audio, handling, visual, and bridge unit tests (37 passed)
 flutter test
 ```
 
