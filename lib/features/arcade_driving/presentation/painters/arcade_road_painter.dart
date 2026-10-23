@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Renders a dynamic pseudo-3D perspective road with scrolling lane markings,
-/// glowing neon barriers, and a cyberpunk horizon.
+/// surface grit, high-speed warp streaks, glowing neon barriers, and a cyberpunk horizon.
 class ArcadeRoadPainter extends CustomPainter {
   final double scrollOffset;
   final double playerSpeedMph;
@@ -82,22 +82,33 @@ class ArcadeRoadPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, horizonY, w, h - horizonY));
     canvas.drawPath(roadPath, roadPaint);
 
+    // Subtle Road Surface Motion Grit Lines
+    _drawRoadSurfaceMotion(canvas, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight, horizonY, h);
+
     // 4. Glowing Neon Road Borders
     _drawNeonBorders(canvas, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight, horizonY, h);
 
     // 5. Scrolling Lane Dividers (3 lanes = 2 dividers)
     _drawLaneDividers(canvas, roadTopLeft, roadTopRight, roadBottomLeft, roadBottomRight, horizonY, h);
+
+    // 6. High-Speed Warp Streaks (active at > 85 MPH)
+    if (playerSpeedMph > 85.0) {
+      _drawWarpSpeedLines(canvas, w, h, horizonY);
+    }
   }
 
   void _drawHorizonBackdrop(Canvas canvas, double w, double horizonY) {
-    // Horizon glow
+    // Horizon glow with dynamic intensity based on speed
+    final speedRatio = (playerSpeedMph / 250.0).clamp(0.0, 1.0);
+    final glowAlpha = 0.25 + 0.15 * speedRatio;
+
     final glowPaint = Paint()
       ..shader = RadialGradient(
         center: const Alignment(0.0, 1.0),
         radius: 1.0,
         colors: [
-          const Color(0xFF00E5FF).withValues(alpha: 0.25),
-          const Color(0xFFE02424).withValues(alpha: 0.12),
+          const Color(0xFF00E5FF).withValues(alpha: glowAlpha),
+          const Color(0xFFE02424).withValues(alpha: glowAlpha * 0.6),
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, horizonY * 1.5));
@@ -127,6 +138,34 @@ class ArcadeRoadPainter extends CustomPainter {
       if (i.abs() <= 2) continue; // Skip road area
       final bottomX = centerX + (i * (w / 6));
       canvas.drawLine(Offset(centerX, horizonY), Offset(bottomX, h), gridPaint);
+    }
+  }
+
+  void _drawRoadSurfaceMotion(
+    Canvas canvas,
+    double topLeft,
+    double topRight,
+    double bottomLeft,
+    double bottomRight,
+    double topY,
+    double bottomY,
+  ) {
+    final gritPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.035)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+
+    const int totalGritSteps = 24;
+    for (int i = 0; i < totalGritSteps; i++) {
+      final progress = ((i + scrollOffset * 1.5) % totalGritSteps) / totalGritSteps;
+      final t = progress * progress; // perspective acceleration
+      final y = topY + (bottomY - topY) * t;
+
+      final xLeft = topLeft + (bottomLeft - topLeft) * t;
+      final xRight = topRight + (bottomRight - topRight) * t;
+
+      // Draw subtle road scanline
+      canvas.drawLine(Offset(xLeft, y), Offset(xRight, y), gritPaint);
     }
   }
 
@@ -216,6 +255,40 @@ class ArcadeRoadPainter extends CustomPainter {
 
         canvas.drawLine(Offset(x0, y0), Offset(x1, y1), dashPaint);
       }
+    }
+  }
+
+  void _drawWarpSpeedLines(Canvas canvas, double w, double h, double horizonY) {
+    final warpFactor = ((playerSpeedMph - 85.0) / 165.0).clamp(0.0, 1.0);
+    final streakAlpha = (0.2 + 0.5 * warpFactor).clamp(0.0, 0.7);
+
+    final streakPaint = Paint()
+      ..color = const Color(0xFF00E5FF).withValues(alpha: streakAlpha)
+      ..strokeWidth = 1.5 + (2.0 * warpFactor)
+      ..style = PaintingStyle.stroke;
+
+    final rng = math.Random(77);
+    final streakCount = (6 + (14 * warpFactor)).toInt();
+
+    for (int i = 0; i < streakCount; i++) {
+      final side = rng.nextBool() ? 1 : -1;
+      final startProgress = rng.nextDouble() * 0.7;
+      final length = 0.12 + 0.25 * warpFactor;
+      final endProgress = (startProgress + length).clamp(0.0, 1.0);
+
+      final t0 = startProgress * startProgress;
+      final t1 = endProgress * endProgress;
+
+      final y0 = horizonY + (h - horizonY) * t0;
+      final y1 = horizonY + (h - horizonY) * t1;
+
+      final spread0 = (w * 0.22) + (rng.nextDouble() * w * 0.25);
+      final spread1 = spread0 * (1.0 + 1.2 * t1);
+
+      final x0 = (w / 2) + (side * spread0);
+      final x1 = (w / 2) + (side * spread1);
+
+      canvas.drawLine(Offset(x0, y0), Offset(x1, y1), streakPaint);
     }
   }
 

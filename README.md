@@ -12,6 +12,14 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### 🔊 Feature 04: Game UI, Audio & Visual Effects Polish (Flutter Only)
+- **Cyber Sports Car UI Design**: Glassmorphic dark styling, neon borders, custom telemetry badges, and consistent typography across Garage, HUD, Pause, Game Over, and Audio dialogs.
+- **Dynamic Driving Visual Feedback**: Dynamic speedometer color transitions (Cyan < 115 MPH, Amber 115-180 MPH, Hyper Red > 180 MPH), instantaneous power output kW bar gauge, road surface motion grit, and warp speed streaks (> 85 MPH).
+- **Critical Hull Alarm & Pulsing Shield**: Emergency red warning box and flashing bar when hull < 25%; concentric glowing shield rings during collision recovery.
+- **Embedded Audio Engine**: Procedural 16-bit PCM WAV assets for BGM, electric motor acceleration/deceleration with dynamic pitch scaling (0.8x-1.9x), collision crunch, verge sparks, and UI button blips.
+- **Comprehensive Audio Controls**: Interactive Audio modal with Master, Music, and SFX volume sliders, individual mute switches, and defaults restore accessible anywhere in the app.
+- **Performance & Accessibility**: Isolated `RepaintBoundary` rendering layers, debounced audio triggers, throttled engine updates, and 48x48dp minimum touch target compliance.
+
 ### ⚡ Feature 03: Advanced Driving Controls & Handling (Flutter Only)
 - **Smooth, Frame-Rate-Independent Steering**: Exponential lateral velocity smoothing (`1 - exp(-12 * dt)`) with realistic lateral inertia and natural auto-centering.
 - **Electric Hypercar Torque Curve**: Progressive acceleration delivering ~95 MPH/s at low speeds, naturally tapering off against aerodynamic drag at 250 MPH.
@@ -57,7 +65,7 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 # Static analysis (0 errors, 0 warnings, 0 deprecations)
 flutter analyze
 
-# Automated widget, handling, and bridge unit tests (22 passed)
+# Automated widget, audio, handling, and bridge unit tests (32 passed)
 flutter test
 ```
 

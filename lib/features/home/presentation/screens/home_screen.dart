@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/audio/game_audio_service.dart';
 import '../../../../core/bridge/unity_bridge_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/cyber_button.dart';
 import 'package:tesla_roadster_game/features/arcade_driving/presentation/screens/arcade_game_screen.dart';
+import 'package:tesla_roadster_game/features/arcade_driving/presentation/widgets/audio_settings_dialog.dart';
 import 'package:tesla_roadster_game/features/game_viewport/presentation/screens/game_viewport_screen.dart';
 import '../widgets/quick_specs_row.dart';
 import '../widgets/roadster_hero_banner.dart';
@@ -48,7 +50,20 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            key: const Key('home_audio_settings_button'),
+            icon: const Icon(Icons.tune_rounded, color: Color(0xFF00E5FF)),
+            tooltip: 'Audio Settings',
+            onPressed: () {
+              GameAudioService.instance.playUiTap();
+              AudioSettingsDialog.show(context);
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

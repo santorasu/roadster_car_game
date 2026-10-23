@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../audio/game_audio_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+
 
 enum CyberButtonVariant { primary, secondary, outline, danger }
 
@@ -129,9 +131,11 @@ class _CyberButtonState extends State<CyberButton>
             borderRadius: BorderRadius.circular(14),
             onTap: isEnabled
                 ? () {
+                    GameAudioService.instance.playUiTap();
                     widget.onPressed?.call();
                   }
                 : null,
+
             onTapDown: (_) => isEnabled ? _animCtrl.forward() : null,
             onTapUp: (_) => isEnabled ? _animCtrl.reverse() : null,
             onTapCancel: () => isEnabled ? _animCtrl.reverse() : null,

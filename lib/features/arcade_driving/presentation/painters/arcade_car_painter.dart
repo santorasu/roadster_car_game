@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/models/player_car.dart';
 
@@ -249,19 +250,44 @@ class ArcadeCarPainter extends CustomPainter {
   }
 
   void _drawRecoveryAura(Canvas canvas, double cw, double ch) {
-    final auraPaint = Paint()
-      ..color = const Color(0xFF00E5FF).withValues(alpha: 0.45)
+    final pulse = (math.sin(player.collisionRecoveryTimer * 16.0) + 1.0) / 2.0;
+    final outerAlpha = (0.25 + 0.35 * pulse).clamp(0.0, 1.0);
+    final innerAlpha = (0.40 + 0.30 * (1.0 - pulse)).clamp(0.0, 1.0);
+
+    // Outer pulsing barrier halo
+    final outerPaint = Paint()
+      ..color = const Color(0xFF00E5FF).withValues(alpha: outerAlpha)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+      ..strokeWidth = 2.0 + (1.5 * pulse)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset.zero, width: cw * 1.25, height: ch * 1.15),
-        const Radius.circular(16),
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: cw * (1.22 + 0.12 * pulse),
+          height: ch * (1.12 + 0.08 * pulse),
+        ),
+        const Radius.circular(18),
       ),
-      auraPaint,
+      outerPaint,
+    );
+
+    // Inner sharp stabilization shield
+    final innerPaint = Paint()
+      ..color = Colors.white.withValues(alpha: innerAlpha)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset.zero, width: cw * 1.15, height: ch * 1.08),
+        const Radius.circular(14),
+      ),
+      innerPaint,
     );
   }
+
 
   @override
   bool shouldRepaint(covariant ArcadeCarPainter oldDelegate) {
