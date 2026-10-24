@@ -305,6 +305,55 @@ class ArcadeHud extends StatelessWidget {
                 ),
               ],
 
+              // Real-time Near-Miss Notification Toast (Feature 10)
+              if (state.nearMissNotificationTimer > 0.0) ...[
+                SizedBox(height: 4.h),
+                Center(
+                  child: Container(
+                    key: const Key('hud_near_miss_toast'),
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFB300), Color(0xFFFF3D00)],
+                      ),
+                      borderRadius: BorderRadius.circular(6.r),
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF9100).withValues(alpha: 0.6),
+                          blurRadius: 10.r,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.bolt_rounded,
+                          size: 14.r,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 5.w),
+                        Text(
+                          state.gameMode == GameMode.timeTrial
+                              ? '⚡ NEAR MISS! +${state.lastNearMissBonusScore} PTS (+1.5s)'
+                              : '⚡ NEAR MISS! +${state.lastNearMissBonusScore} PTS',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
               // Real-time Mission Objective Completion Toast
               if (activeToastMission != null) ...[
                 SizedBox(height: 4.h),

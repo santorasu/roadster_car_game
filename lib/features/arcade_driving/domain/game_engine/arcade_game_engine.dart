@@ -155,6 +155,10 @@ class ArcadeGameEngine {
       state.bonusTimeFlashTimer = math.max(0.0, state.bonusTimeFlashTimer - dt);
     }
 
+    if (state.nearMissNotificationTimer > 0.0) {
+      state.nearMissNotificationTimer = math.max(0.0, state.nearMissNotificationTimer - dt);
+    }
+
     // 0. Update Collision Recovery Window
     if (player.collisionRecoveryTimer > 0.0) {
       player.collisionRecoveryTimer = math.max(0.0, player.collisionRecoveryTimer - dt);
@@ -312,6 +316,9 @@ class ArcadeGameEngine {
     for (int i = obstacles.length - 1; i >= 0; i--) {
       final obstacle = obstacles[i];
 
+      // Feature 10: Autonomous AI updates (safe-gap checks, braking, and lane transitions)
+      obstacle.updateAI(dt, obstacles, lanes, player.lanePosition, player.speedMph);
+
       // Relative downward speed on screen:
       // Player moving faster makes obstacle approach player (yProgress increases)
       final relativeSpeed = math.max(20.0, player.speedMph - obstacle.speedMph + 30.0);
@@ -325,20 +332,28 @@ class ArcadeGameEngine {
         }
       }
 
-      // Check near-miss overtaking bonus
+      // Check near-miss overtaking bonus (Feature 10)
       if (!obstacle.hasCollided &&
           !obstacle.hasAwardedNearMiss &&
-          obstacle.yProgress >= 0.90 &&
-          obstacle.yProgress < 0.95) {
-        obstacle.hasAwardedNearMiss = true;
-        state.nearMissCount++;
-        state.score += 250;
+          obstacle.yProgress >= 0.88 &&
+          obstacle.yProgress <= 0.96) {
+        final lateralDist = (obstacle.lanePosition - player.lanePosition).abs();
+        if (lateralDist >= 0.15 && lateralDist <= 0.52) {
+          obstacle.hasAwardedNearMiss = true;
+          state.nearMissCount++;
+          final bonusScore = (250 * state.comboMultiplier).round();
+          state.score += bonusScore;
+          state.lastNearMissBonusScore = bonusScore;
+          state.nearMissNotificationTimer = 1.2;
 
-        // In Time Trial mode, award bonus time!
-        if (state.gameMode == GameMode.timeTrial) {
-          final bonus = GameModeInfo.timeTrial.nearMissBonusSeconds;
-          state.timeRemainingSeconds += bonus;
-          state.bonusTimeFlashTimer = 1.0;
+          // In Time Trial mode, award bonus time!
+          if (state.gameMode == GameMode.timeTrial) {
+            final bonus = GameModeInfo.timeTrial.nearMissBonusSeconds;
+            state.timeRemainingSeconds += bonus;
+            state.bonusTimeFlashTimer = 1.0;
+          }
+
+          _spawnNearMissSparks(playerRect.center, obstacle.lanePosition > player.lanePosition);
         }
       }
 
@@ -366,24 +381,39 @@ class ArcadeGameEngine {
     final typeRoll = _random.nextDouble();
     ObstacleType type;
     Color color;
-    double speed;
+    double baseSpeed;
+    TrafficBehavior behavior;
 
-    if (typeRoll < 0.35) {
+    // Feature 10: Progression scaling based on track sector and distance
+    final sectorDifficulty = (state.sectorIndex / 7.0).clamp(0.15, 1.0);
+    final speedBoost = sectorDifficulty * 16.0;
+
+    if (typeRoll < 0.38) {
       type = ObstacleType.cyberSedan;
       color = const Color(0xFF00E5FF); // Electric Cyan
-      speed = 65.0 + _random.nextDouble() * 20.0;
-    } else if (typeRoll < 0.70) {
+      baseSpeed = 65.0 + _random.nextDouble() * 20.0 + speedBoost;
+      if (_random.nextDouble() < (0.45 + sectorDifficulty * 0.40)) {
+        behavior = _random.nextDouble() < sectorDifficulty * 0.5
+            ? TrafficBehavior.aggressive
+            : TrafficBehavior.laneChanger;
+      } else {
+        behavior = TrafficBehavior.cruiser;
+      }
+    } else if (typeRoll < 0.72) {
       type = ObstacleType.cyberTruck;
       color = const Color(0xFFFFB300); // Warning Amber
-      speed = 50.0 + _random.nextDouble() * 15.0;
-    } else if (typeRoll < 0.90) {
+      baseSpeed = 50.0 + _random.nextDouble() * 15.0 + speedBoost * 0.8;
+      behavior = _random.nextDouble() < 0.65 ? TrafficBehavior.speedAdjuster : TrafficBehavior.laneChanger;
+    } else if (typeRoll < 0.88) {
       type = ObstacleType.heavyHauler;
       color = const Color(0xFF78909C); // Industrial Slate
-      speed = 35.0 + _random.nextDouble() * 10.0;
+      baseSpeed = 35.0 + _random.nextDouble() * 12.0 + speedBoost * 0.5;
+      behavior = TrafficBehavior.cruiser;
     } else {
       type = ObstacleType.energyBarrier;
       color = const Color(0xFFFF1744); // Hazard Red
-      speed = 0.0; // Stationary road hazard
+      baseSpeed = 0.0; // Stationary road hazard
+      behavior = TrafficBehavior.hazard;
     }
 
     obstacles.add(ObstacleVehicle(
@@ -392,8 +422,29 @@ class ArcadeGameEngine {
       color: color,
       lanePosition: chosenLane,
       yProgress: 0.05, // Spawn at horizon
-      speedMph: speed,
+      speedMph: baseSpeed,
+      desiredSpeedMph: baseSpeed,
+      behavior: behavior,
     ));
+  }
+
+  void _spawnNearMissSparks(Offset playerCenter, bool obstacleIsOnRight) {
+    final lateralSign = obstacleIsOnRight ? 1.0 : -1.0;
+    for (int i = 0; i < 8; i++) {
+      final angle = (obstacleIsOnRight ? 0.0 : math.pi) + (_random.nextDouble() - 0.5) * 0.8;
+      final speed = 60.0 + _random.nextDouble() * 120.0;
+      particles.add(GameParticle(
+        x: playerCenter.dx + lateralSign * 25.0,
+        y: playerCenter.dy + (_random.nextDouble() - 0.5) * 30.0,
+        vx: math.cos(angle) * speed,
+        vy: -50.0 - _random.nextDouble() * 100.0,
+        life: 1.0,
+        maxLife: 0.28 + _random.nextDouble() * 0.18,
+        size: 2.2 + _random.nextDouble() * 1.8,
+        color: _random.nextBool() ? const Color(0xFF00E5FF) : const Color(0xFFFFB300),
+        type: ParticleType.collisionSpark,
+      ));
+    }
   }
 
   void _handleCollision(ObstacleVehicle obstacle, Rect playerRect, Rect obstacleRect) {
