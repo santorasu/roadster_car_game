@@ -25,9 +25,9 @@ class GameAudioService {
   bool _isEngineLooping = false;
   bool _isSuspended = false;
 
-  // Debouncing & Throttling
   DateTime _lastCollisionSoundTime = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastSparkSoundTime = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime _lastNearMissSoundTime = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastEngineUpdateTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   // Test mode flag allows running under flutter_test without MissingPluginException
@@ -202,6 +202,27 @@ class GameAudioService {
       await _sparkPlayer?.play(AssetSource('audio/sfx_verge_spark.wav'));
     } catch (e) {
       debugPrint('GameAudioService: Spark sound fallback: $e');
+    }
+  }
+
+  /// Trigger futuristic near-miss / whoosh sound cue
+  Future<void> playNearMiss() async {
+    if (isTestMode || _isSuspended) return;
+
+    final now = DateTime.now();
+    if (now.difference(_lastNearMissSoundTime).inMilliseconds < 220) {
+      return; // Debounce multiple rapid near misses
+    }
+    _lastNearMissSoundTime = now;
+
+    await initialize();
+
+    try {
+      await _sparkPlayer?.setVolume(settings.effectiveSfxVolume * 0.85);
+      await _sparkPlayer?.stop();
+      await _sparkPlayer?.play(AssetSource('audio/sfx_verge_spark.wav'));
+    } catch (e) {
+      debugPrint('GameAudioService: Near-miss sound fallback: $e');
     }
   }
 

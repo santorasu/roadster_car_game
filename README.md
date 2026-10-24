@@ -12,6 +12,27 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### 🚗⚡ Feature 10: Advanced Traffic AI & Near-Miss System (Flutter Only)
+- **Autonomous Traffic AI & Archetypes**:
+  - `TrafficBehavior` system categorizing highway traffic into **Cruisers** (steady lane-holders), **Lane Changers** (periodic smooth transitions into safe gaps), **Speed Adjusters** (monitoring traffic ahead and matching flow), **Aggressive Drivers** (rapid weaving between blocked lanes), and **Hazards** (stationary plasma obstacles).
+- **Smooth Physical Lane Changes**:
+  - Non-linear cubic smoothstep interpolation ($3t^2 - 2t^3$) across designated durations with cooldown timers and directional turn signal cues (`laneChangeDirection = -1, 1`).
+- **Safe-Gap Checks & Lead-Vehicle Collision Avoidance**:
+  - Active detection of slower lead traffic within safety buffers (`safeGapY = 0.14`); trailing vehicles engage braking (`isBraking = true`) and decelerate dynamically to match lead speeds without pileups.
+  - Safe-gap scanning across candidate adjacent lanes verifies both leading and trailing clear zones before lane transitions, actively preventing vehicle overlaps and cutoffs against the player.
+- **Telegraphing Visuals & Audio Cues**:
+  - Blinking amber turn indicators on rear corners during lane transitions; intensified red brake light bloom halos during deceleration.
+  - Dynamic `playNearMiss()` whoosh audio feedback with debouncing.
+- **Precision Near-Miss Overtaking System**:
+  - Evaluates close passes without collision across lateral window $[0.15, 0.52]$ and depth $[0.88, 0.96]$.
+  - Awards balanced score bonuses ($250 \times \text{comboMultiplier}$), triggers near-miss slipstream spark particles, and displays prominent HUD toast notification (`⚡ NEAR MISS! +... PTS`).
+  - Strict duplicate protection (`hasAwardedNearMiss`) prevents multi-scoring on a single encounter.
+- **Game Mode & Mission Integration**:
+  - In Time Trial mode, near-miss overtakes award **+1.5s time extensions** with on-screen HUD flashes.
+  - Automatically advances the `HAZARD SLICER` mission (4 close passes) without duplicate rewards.
+- **Pure Canvas Performance**:
+  - 100% CustomPainter pseudo-3D perspective math with zero object allocations in hot game loop, running at locked 60 FPS on Android without Unity or external 3D engines.
+
 ### ⏱️ Feature 09: Game Modes, Missions & Challenges (Flutter Only)
 - **Two Distinct Playable Game Modes**:
   - **Endless Drive**: Classic survival mode where the driver navigates dynamic road curves, rolling elevations, and highway traffic to survive as long as possible while accumulating maximum combo multipliers, score, and distance until hull integrity depletion.

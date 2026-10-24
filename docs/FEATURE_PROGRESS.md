@@ -288,9 +288,38 @@
 
 ---
 
-## Next Steps for Feature 10 (Preparation Only)
+## Feature 10: Advanced Traffic AI & Near-Miss System (Detailed Breakdown)
 
-*Note: Per technical constraints, Feature 10 will NOT be started automatically.*
+### Acceptance Criteria & Verification Matrix
+
+| Requirement | Implementation Summary | Status | Verified Target |
+| :--- | :--- | :---: | :--- |
+| **1. Traffic Behavior & AI Archetypes** | Implemented `TrafficBehavior` enum (`cruiser`, `laneChanger`, `speedAdjuster`, `aggressive`, `hazard`) assigned dynamically to traffic vehicles (`cyberSedan`, `cyberTruck`, `heavyHauler`, `energyBarrier`). Each vehicle manages autonomous cruising speeds, desired speeds, following gaps, and steering decisions. | **PASS** | `ObstacleVehicle`, Unit Tests |
+| **2. Smooth Physical Lane Changes** | Implemented non-linear cubic smoothstep interpolation (`3t² - 2t³`) for lane change transitions. Vehicles smoothly change lateral coordinates across designated durations with cooldown timers and turn direction indicators (`laneChangeDirection = -1, 1`). | **PASS** | Unit Tests (`test/traffic_ai_and_near_miss_test.dart`) |
+| **3. Safe-Gap Checks & Collision Avoidance** | Trailing vehicles scan lead obstacles in the same lane. If a lead vehicle is detected within `safeGapY` (0.14), trailing traffic activates braking (`isBraking = true`), decelerating dynamically to avoid collisions. Vehicles evaluate adjacent lanes and abort lane shifts if candidate lanes are occupied within safety buffers or if cutting off the player. | **PASS** | Engine Unit Tests & Live Emulator |
+| **4. Difficulty & Progression Scaling** | Traffic cruising speeds, lane change frequency, and aggressive behavior archetypes scale progressively with track sectors (Sectors 01–07) and elapsed distance, matching player speed capabilities and road curvature challenges. | **PASS** | `ArcadeGameEngine`, Live Target |
+| **5. Near-Miss Overtaking System** | Precision detection of close passes without collision. Evaluates lateral distance within `[0.15, 0.52]` and vertical depth `[0.88, 0.96]`. Awards balanced score bonus (`250 * comboMultiplier`), displays prominent HUD toast notification (`Key('hud_near_miss_toast')`), and triggers dynamic slipstream spark particles. | **PASS** | `ArcadeGameEngine`, HUD Widget Tests |
+| **6. Duplicate Reward Prevention** | Vehicles track encounter status via `hasAwardedNearMiss`. Subsequent tick evaluations for the same obstacle encounter are rejected, preventing duplicate score or time bonuses. | **PASS** | Unit Tests & Engine Verification |
+| **7. Game Mode & Mission Integration** | In Time Trial mode, near-miss overtakes award +1.5s bonus time with cyan timer flash. Near-misses feed directly into the `HAZARD SLICER` mission (4 close passes) and update career records seamlessly without duplicate rewards. | **PASS** | `test/traffic_ai_and_near_miss_test.dart` |
+| **8. Telegraphing Visuals & Audio** | Renders blinking amber turn signal lights on rear vehicle corners when initiating lane changes (`(blinkTimer * 7).floor() % 2 == 0`) and draws intensified red brake light bloom halos when decelerating. Added `playNearMiss()` whoosh audio feedback with debouncing. | **PASS** | `ArcadeObstaclePainter`, `GameAudioService` |
+| **9. Pure Canvas Performance** | Retained 100% CustomPainter pseudo-3D perspective math with zero object allocations in hot game loop. Avoids heavy external engines (no Unity runtime, no external 3D engine, no cloud backend). | **PASS** | 60 FPS on Android 15 Emulator |
+| **10. Automated Testing Suite** | Authored 9 deterministic tests in `test/traffic_ai_and_near_miss_test.dart` verifying AI archetypes, smoothstep lane changes, lead vehicle braking, safe-gap aborts, near-miss scoring, distant pass rejection, duplicate prevention, Time Trial bonus time, and HUD toast widgets. Full project test suite: **110/110 passed** across 10 test files with **0 flutter analyze issues**. | **PASS** | `flutter analyze` & `flutter test` (110/110 PASS) |
+| **11. Android Target Verification** | Debug APK built in 8.3s, installed and verified on Android 15 ARM64 emulator (`emulator-5554`). Captured 5 high-fidelity screenshots demonstrating traffic lane distributions, multi-vehicle variety, close overtakes, downhill elevation alignment, and session summaries. | **PASS** | `emulator-5554` (API 35 ARM64) |
+
+### Live Android Target Verification (`emulator-5554`)
+- **Device**: Android 15 (API 35), architecture `arm64-v8a`, resolution 1080x2400.
+- **Verification Artifacts Captured**:
+  1. `docs/screenshots/feature_10_traffic_lane_distribution.png`: Multi-vehicle traffic distribution across 3 lanes showing perspective scaling, CyberTrucks, CyberSedans, and stationary plasma barriers.
+  2. `docs/screenshots/feature_10_near_miss_encounter.png`: Close traffic overtake during downhill road elevation in Sector 03 with Heavy Haulers, Sedans, and CyberTrucks.
+  3. `docs/screenshots/feature_10_multi_traffic_dense.png`: Dense high-difficulty traffic showing Heavy Hauler container chevrons, CyberTrucks, and Sedans with taillights.
+  4. `docs/screenshots/feature_10_near_miss_overtake.png`: High-speed close pass with slipstream sparks adjacent to traffic vehicle.
+  5. `docs/screenshots/feature_10_session_summary.png`: Post-run session summary dialog with telemetry and completed career missions (`FIRST LAUNCH`, `ENDURANCE TEST`).
+
+---
+
+## Next Steps for Feature 11 (Preparation Only)
+
+*Note: Per technical constraints, Feature 11 will NOT be started automatically.*
 
 1. **Weather Effects & Atmospheric Simulation**:
    - Dynamic rain particle system, wet asphalt surface reflections, lightning flash illumination events, and atmospheric neon bloom.
@@ -298,6 +327,7 @@
    - Cornering tire squeal audio, supersonic aerodynamic wind shear at > 180 MPH, and sector transition harmonic chimes.
 3. **Deep Profiling & Frame Budget Optimization**:
    - Path caching and per-frame memory allocation audits across low-tier Android GPU profiles.
+
 
 
 

@@ -28,6 +28,8 @@ class ArcadeGameState {
   double timeElapsedSeconds;
   int nearMissCount;
   double bonusTimeFlashTimer;
+  double nearMissNotificationTimer;
+  int lastNearMissBonusScore;
   String? gameOverReason;
 
   ArcadeGameState({
@@ -49,6 +51,8 @@ class ArcadeGameState {
     this.timeElapsedSeconds = 0.0,
     this.nearMissCount = 0,
     this.bonusTimeFlashTimer = 0.0,
+    this.nearMissNotificationTimer = 0.0,
+    this.lastNearMissBonusScore = 0,
     this.gameOverReason,
   });
 
@@ -73,6 +77,8 @@ class ArcadeGameState {
     timeElapsedSeconds = 0.0;
     nearMissCount = 0;
     bonusTimeFlashTimer = 0.0;
+    nearMissNotificationTimer = 0.0;
+    lastNearMissBonusScore = 0;
     gameOverReason = null;
   }
 }

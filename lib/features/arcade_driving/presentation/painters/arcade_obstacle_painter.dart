@@ -61,7 +61,49 @@ class ArcadeObstaclePainter extends CustomPainter {
           break;
       }
 
+      // Feature 10: Turn signal indicators & active brake light bloom
+      if (obstacle.type != ObstacleType.energyBarrier) {
+        _drawTurnSignalsAndBrakes(canvas, cw, ch, obstacle);
+      }
+
       canvas.restore();
+    }
+  }
+
+  void _drawTurnSignalsAndBrakes(Canvas canvas, double cw, double ch, ObstacleVehicle obstacle) {
+    final halfW = cw / 2;
+    final halfH = ch / 2;
+
+    // 1. Blinking Amber Turn Signals for Lane Changes
+    if (obstacle.isChangingLane) {
+      final isBlinkOn = (obstacle.blinkTimer * 7).floor() % 2 == 0;
+      if (isBlinkOn && obstacle.laneChangeDirection != 0) {
+        final signalX = obstacle.laneChangeDirection < 0 ? -halfW * 0.82 : halfW * 0.82;
+        final signalY = halfH * 0.85;
+
+        final blinkGlow = Paint()
+          ..color = const Color(0xFFFFB300)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+        canvas.drawCircle(Offset(signalX, signalY), 5.0, blinkGlow);
+        canvas.drawCircle(Offset(signalX, signalY), 2.5, Paint()..color = Colors.white);
+      }
+    }
+
+    // 2. Intensified Emissive Brake Lights Bloom
+    if (obstacle.isBraking) {
+      final brakeBloomPaint = Paint()
+        ..color = const Color(0xFFFF1744).withValues(alpha: 0.85)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      canvas.drawLine(
+        Offset(-halfW * 0.80, halfH * 0.92),
+        Offset(halfW * 0.80, halfH * 0.92),
+        brakeBloomPaint..strokeWidth = 6.0,
+      );
+      canvas.drawLine(
+        Offset(-halfW * 0.80, halfH * 0.92),
+        Offset(halfW * 0.80, halfH * 0.92),
+        Paint()..color = Colors.white..strokeWidth = 2.0,
+      );
     }
   }
 
