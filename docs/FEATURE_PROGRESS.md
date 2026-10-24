@@ -11,7 +11,8 @@
 | **FEATURE 05** | **Enhanced Car & Road Visuals** | **Android Only** | **COMPLETED & VERIFIED** |
 | **FEATURE 06** | **Dynamic Roads & Advanced Gameplay** | **Android Only** | **COMPLETED & VERIFIED** |
 | **FEATURE 07** | **Road Elevation & Career Progression** | **Android Only** | **COMPLETED & VERIFIED** |
-| FEATURE 08 | Soundscape Polish, Weather FX & Deep Optimization | Android Only | Planned (Pending Next Phase) |
+| **FEATURE 08** | **Garage, Car Selection & Customization** | **Android Only** | **COMPLETED & VERIFIED** |
+| FEATURE 09 | Soundscape Polish, Weather FX & Deep Optimization | Android Only | Planned (Pending Next Phase) |
 
 ---
 
@@ -227,9 +228,40 @@
 
 ---
 
-## Next Steps for Feature 08 (Preparation Only)
+---
 
-*Note: Per constraints, Feature 08 will NOT be started automatically.*
+## Feature 08: Garage, Car Selection & Customization (Detailed Breakdown)
+
+### Acceptance Criteria & Verification Matrix
+
+| Requirement | Implementation Summary | Status | Verified Target |
+| :--- | :--- | :---: | :--- |
+| **1. Vehicle Selection (>= 3 Variants)** | Added 3 distinct fictional electric hypercars: `Cyber Roadster` (balanced all-rounder, 250 MPH), `Apex GT-E` (lightweight circuit Le Mans prototype, 242 MPH, +15% torque, +18% handling, -25% durability), and `Hyperion Phantom` (heavy armored interceptor, 268 MPH, -12% torque, -12% handling, +32% durability). Distinct body shells, cockpits, splitters, diffusers, and wings. | **PASS** | Vehicle Catalog Unit Tests & Canvas Painter |
+| **2. High-Detail Garage Car Preview** | Created `GarageCarPreviewPainter` with 3D turntable oscillation, floor spotlight reflections, glowing concentric turntable grid, contact ground shadows, underglow ground emission, metallic gradient paint shader with specular gloss sweep, transparent cockpit glass with digital dashboard and yoke, quad laser headlights, and full-width taillight blade. | **PASS** | Live CustomPainter on Android 15 Emulator |
+| **3. Three-Tier Customization System** | Implemented interactive tabs for **Body Paint** (6 metallic gradients: Cyber Crimson, Electric Cyan, Stealth Obsidian, Acid Pulse, Solar Flare, Neon Violet), **Wheel Rims** (4 rim designs: Aero Turbine, Cyber Disc, Starfire Split, Carbon Lattice with custom caliper colors), and **Neon Underglow** (6 ground emission options: Cyber Cyan, Laser Red, Acid Green, Pulse Violet, Solar Amber, Stealth Off). | **PASS** | Interactive Garage Widget & Test Suite |
+| **4. Vehicle Handling & Performance Stats** | Displayed Max Speed, Acceleration, Handling, and Durability progress bars. Stat differences directly and consistently drive core gameplay mechanics: `topSpeed` limits velocity, motor torque scales acceleration in `computeAccelerationRate`, `baseSteeringSpeed` governs lateral agility, and collision damage scales with `damageMultiplier`. | **PASS** | Unit Tests (`test/garage_and_customization_test.dart`) |
+| **5. Career Milestones Unlock System** | Integrated progression requirements: Cyber Roadster unlocked by default; Apex GT-E unlocked upon achieving `century` milestone (100+ MPH); Hyperion Phantom unlocked upon achieving `warp_speed` milestone (150+ MPH). Customization paints, rims, and underglow require career milestones (`century`, `warp_speed`, `high_roller`, `cyber_legend`). Locked items display lock badges and clear unlock requirement instructions. | **PASS** | Milestone Verification Tests |
+| **6. Persistent Storage Integration** | Extended `PlayerDataStorage` and `shared_preferences` with persistent keys (`roadster_custom_vehicle_id`, `roadster_custom_paint_id`, `roadster_custom_wheel_id`, `roadster_custom_underglow_id`). Player selections automatically persist across app launches, driving sessions, and hot restarts. | **PASS** | Storage Tests & Live Emulator Session Runs |
+| **7. In-Game Rendering & Gameplay** | In-game `ArcadeCarPainter` dynamically renders equipped body silhouettes, paint gradients, rim styles, and underglow color. In-game physics apply the selected car's top speed, torque, steering, and damage multipliers. | **PASS** | Live In-Game Emulator Verification |
+| **8. Automated Testing Suite** | Authored 14 deterministic unit and widget tests in `test/garage_and_customization_test.dart` verifying vehicle catalog, milestone lock conditions, persistence, physics differences across all 3 vehicles, custom painter visual rendering, and interactive UI widget tab switches. Full test suite: **80/80 passed** across all 8 test files with **0 flutter analyze issues**. | **PASS** | `flutter analyze` & `flutter test` (80/80 PASS) |
+| **9. Android Target Verification** | Debug APK built in 13.9s, installed and verified on Android 15 ARM64 emulator (`emulator-5554`). Captured 7 high-fidelity screenshots demonstrating vehicle switching, locked/unlocked states, paint/wheel/underglow customization, and live in-game driving. | **PASS** | `emulator-5554` (API 35 ARM64) |
+
+### Live Android Target Verification (`emulator-5554`)
+- **Device**: Android 15 (API 35), architecture `arm64-v8a`, resolution 1080x2400.
+- **Milestones captured**:
+  1. `feature08_01_garage_home.png`: Interactive Garage Showroom displaying default Cyber Roadster with metallic Cyber Crimson paint, Aero Turbine wheels, and neon cyan underglow.
+  2. `feature08_02_apex_gte_locked.png`: Switching to Apex GT-E showing Le Mans Valkyrie Aero silhouette, dual keel ducts, shark fin, GT3 rear wing, updated circuit stats (+15% torque, +18% agility, -25% durability), and `EQUIP CAR` action unlocked via `century` milestone.
+  3. `feature08_03_hyperion_phantom.png`: Switching to Hyperion Phantom showing faceted armored wedge interceptor silhouette, rear deck louvers, armored airbrake flap, and heavy interceptor stats (268 MPH, +32% durability).
+  4. `feature08_04_custom_paint_and_wheels.png`: Live customization preview with Electric Cyan paint finish and active WHEELS tab displaying Aero Turbine, Cyber Disc, Starfire Split, and Carbon Lattice rim swatches.
+  5. `feature08_05_underglow_options.png`: UNDERGLOW customization tab displaying 6 glowing ground illumination options (Cyber Cyan, Laser Red, Acid Green, Pulse Violet, Solar Amber, Stealth Off) with Solar Amber selected.
+  6. `feature08_06_ingame_hyperion_custom.png`: Arcade gameplay launch verifying the equipped Hyperion Phantom rendered in-game with Electric Cyan paint, Cyber Disc wheels, and Solar Amber underglow emission.
+  7. `feature08_07_ingame_highspeed.png`: High-speed arcade gameplay demonstrating Hyperion Phantom active aero deployment, elevation changes, traffic negotiation, and durability scaling.
+
+---
+
+## Next Steps for Feature 09 (Preparation Only)
+
+*Note: Per constraints, Feature 09 will NOT be started automatically.*
 
 1. **Weather Effects & Atmospheric Simulation**:
    - Dynamic rain particle system, wet asphalt surface reflections, lightning flash illumination events, and neon bloom.

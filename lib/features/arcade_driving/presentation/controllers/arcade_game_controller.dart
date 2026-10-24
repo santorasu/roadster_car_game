@@ -6,6 +6,7 @@ import '../../domain/models/arcade_game_state.dart';
 import '../../domain/models/game_particle.dart';
 import '../../domain/models/obstacle_vehicle.dart';
 import '../../domain/models/player_car.dart';
+import '../../../garage/domain/models/vehicle_definition.dart';
 
 /// Presentation controller bridging the Flutter UI to the ArcadeGameEngine loop.
 class ArcadeGameController extends TickerProvider {
@@ -66,8 +67,14 @@ class ArcadeGameController extends TickerProvider {
     PlayerDataService.instance.loadCareerData().then((careerData) {
       if (careerData.highScore > state.highScore) {
         state.highScore = careerData.highScore;
-        _notifyListeners();
       }
+      engine.player.customization = VehicleCustomization(
+        vehicleId: careerData.selectedVehicleId,
+        paintColorId: careerData.selectedPaintColorId,
+        wheelStyleId: careerData.selectedWheelStyleId,
+        underglowColorId: careerData.selectedUnderglowColorId,
+      );
+      _notifyListeners();
     }).catchError((_) {});
   }
 

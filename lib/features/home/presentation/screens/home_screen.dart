@@ -8,9 +8,9 @@ import '../../../../core/widgets/cyber_button.dart';
 import 'package:tesla_roadster_game/features/arcade_driving/presentation/screens/arcade_game_screen.dart';
 import 'package:tesla_roadster_game/features/arcade_driving/presentation/widgets/audio_settings_dialog.dart';
 import 'package:tesla_roadster_game/features/game_viewport/presentation/screens/game_viewport_screen.dart';
+import 'package:tesla_roadster_game/features/garage/presentation/widgets/garage_vehicle_selector.dart';
 import '../widgets/career_records_card.dart';
 import '../widgets/quick_specs_row.dart';
-import '../widgets/roadster_hero_banner.dart';
 import '../widgets/system_status_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -72,7 +72,7 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const RoadsterHeroBanner(),
+              const GarageVehicleSelector(),
               const SizedBox(height: 16),
 
               const QuickSpecsRow(),

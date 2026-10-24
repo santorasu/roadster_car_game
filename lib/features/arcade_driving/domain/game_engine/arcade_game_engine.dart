@@ -25,24 +25,30 @@ class ArcadeGameEngine {
   final double _spawnInterval = 1.8; // seconds between obstacles
 
   // Physics & Handling Constants
-  static const double topSpeed = 250.0;
+  static const double defaultTopSpeed = 250.0;
   static const double minSpeed = 20.0;
-  static const double baseSteeringSpeed = 2.4; // Base lateral lanes per second
+  static const double defaultBaseSteeringSpeed = 2.4; // Base lateral lanes per second
   static const double naturalCenteringRate = 0.55; // Controlled auto-return to neutral
   static const double boundaryVergeThreshold = 0.88; // Road verge starts here
   static const double maxPlayableBoundary = 1.0; // Strict playable boundary limit
+
+  /// Active top speed governed by selected vehicle chassis
+  double get topSpeed => player.vehicle.topSpeedMph;
+
+  /// Active lateral steering responsiveness governed by selected vehicle chassis
+  double get baseSteeringSpeed => defaultBaseSteeringSpeed * player.vehicle.baseSteeringMultiplier;
 
   // Lanes
   static const List<double> lanes = [-0.65, 0.0, 0.65];
 
   ArcadeGameEngine();
 
-  /// Computes progressive motor acceleration accounting for instant electric torque
-  /// and high-speed aerodynamic drag
+  /// Computes progressive motor acceleration accounting for instant electric torque,
+  /// vehicle chassis acceleration multiplier, and high-speed aerodynamic drag
   double computeAccelerationRate(double speed) {
     final speedRatio = (speed / topSpeed).clamp(0.0, 1.0);
-    // Instant torque at lower speeds (up to 95 MPH/s), progressively tapering
-    final motorTorque = 95.0 - (38.0 * math.pow(speedRatio, 0.65));
+    // Instant torque at lower speeds scaled by vehicle-specific powertrain tuning
+    final motorTorque = (95.0 - (38.0 * math.pow(speedRatio, 0.65))) * player.vehicle.accelerationMultiplier;
     // Aerodynamic drag increases with velocity squared
     final aeroDrag = 42.0 * math.pow(speedRatio, 2.0);
     return math.max(6.0, motorTorque - aeroDrag);
@@ -370,7 +376,8 @@ class ArcadeGameEngine {
         break;
     }
 
-    player.health = math.max(0.0, player.health - damage);
+    final effectiveDamage = damage * player.vehicle.damageMultiplier;
+    player.health = math.max(0.0, player.health - effectiveDamage);
     // Progressive speed reduction with vehicle handling stabilization
     player.speedMph = math.max(minSpeed, player.speedMph * 0.65);
     // Dampen lateral velocity to stabilize vehicle after impact

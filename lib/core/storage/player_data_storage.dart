@@ -97,6 +97,12 @@ class PlayerCareerData {
   final bool musicMuted;
   final bool sfxMuted;
 
+  // Feature 08: Garage, Car Selection & Customization
+  final String selectedVehicleId;
+  final String selectedPaintColorId;
+  final String selectedWheelStyleId;
+  final String selectedUnderglowColorId;
+
   const PlayerCareerData({
     this.highScore = 0,
     this.bestDistanceMeters = 0.0,
@@ -110,6 +116,10 @@ class PlayerCareerData {
     this.masterMuted = false,
     this.musicMuted = false,
     this.sfxMuted = false,
+    this.selectedVehicleId = 'cyber_roadster',
+    this.selectedPaintColorId = 'cyber_crimson',
+    this.selectedWheelStyleId = 'turbine_aero',
+    this.selectedUnderglowColorId = 'neon_cyan',
   });
 
   PlayerCareerData copyWith({
@@ -125,6 +135,10 @@ class PlayerCareerData {
     bool? masterMuted,
     bool? musicMuted,
     bool? sfxMuted,
+    String? selectedVehicleId,
+    String? selectedPaintColorId,
+    String? selectedWheelStyleId,
+    String? selectedUnderglowColorId,
   }) {
     return PlayerCareerData(
       highScore: highScore ?? this.highScore,
@@ -139,6 +153,10 @@ class PlayerCareerData {
       masterMuted: masterMuted ?? this.masterMuted,
       musicMuted: musicMuted ?? this.musicMuted,
       sfxMuted: sfxMuted ?? this.sfxMuted,
+      selectedVehicleId: selectedVehicleId ?? this.selectedVehicleId,
+      selectedPaintColorId: selectedPaintColorId ?? this.selectedPaintColorId,
+      selectedWheelStyleId: selectedWheelStyleId ?? this.selectedWheelStyleId,
+      selectedUnderglowColorId: selectedUnderglowColorId ?? this.selectedUnderglowColorId,
     );
   }
 }
@@ -165,6 +183,13 @@ abstract class PlayerDataStorage {
     required bool musicMuted,
     required bool sfxMuted,
   });
+
+  Future<void> saveVehicleCustomization({
+    required String vehicleId,
+    required String paintColorId,
+    required String wheelStyleId,
+    required String underglowColorId,
+  });
 }
 
 /// SharedPreferences implementation for on-device local Android storage
@@ -182,6 +207,11 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
   static const String _keyMasterMuted = 'roadster_audio_master_muted';
   static const String _keyMusicMuted = 'roadster_audio_music_muted';
   static const String _keySfxMuted = 'roadster_audio_sfx_muted';
+
+  static const String _keySelectedVehicle = 'roadster_custom_vehicle_id';
+  static const String _keySelectedPaint = 'roadster_custom_paint_id';
+  static const String _keySelectedWheel = 'roadster_custom_wheel_id';
+  static const String _keySelectedUnderglow = 'roadster_custom_underglow_id';
 
   @override
   Future<PlayerCareerData> loadCareerData() async {
@@ -202,6 +232,10 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
         masterMuted: prefs.getBool(_keyMasterMuted) ?? false,
         musicMuted: prefs.getBool(_keyMusicMuted) ?? false,
         sfxMuted: prefs.getBool(_keySfxMuted) ?? false,
+        selectedVehicleId: prefs.getString(_keySelectedVehicle) ?? 'cyber_roadster',
+        selectedPaintColorId: prefs.getString(_keySelectedPaint) ?? 'cyber_crimson',
+        selectedWheelStyleId: prefs.getString(_keySelectedWheel) ?? 'turbine_aero',
+        selectedUnderglowColorId: prefs.getString(_keySelectedUnderglow) ?? 'neon_cyan',
       );
     } catch (e) {
       debugPrint('SharedPreferencesPlayerDataStorage load error (using defaults): $e');
@@ -225,6 +259,10 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
       await prefs.setBool(_keyMasterMuted, data.masterMuted);
       await prefs.setBool(_keyMusicMuted, data.musicMuted);
       await prefs.setBool(_keySfxMuted, data.sfxMuted);
+      await prefs.setString(_keySelectedVehicle, data.selectedVehicleId);
+      await prefs.setString(_keySelectedPaint, data.selectedPaintColorId);
+      await prefs.setString(_keySelectedWheel, data.selectedWheelStyleId);
+      await prefs.setString(_keySelectedUnderglow, data.selectedUnderglowColorId);
       PlayerDataService.notifyDataChanged();
     } catch (e) {
       debugPrint('SharedPreferencesPlayerDataStorage save error: $e');
@@ -300,6 +338,25 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
       await prefs.setBool(_keySfxMuted, sfxMuted);
     } catch (e) {
       debugPrint('SharedPreferencesPlayerDataStorage audio save error: $e');
+    }
+  }
+
+  @override
+  Future<void> saveVehicleCustomization({
+    required String vehicleId,
+    required String paintColorId,
+    required String wheelStyleId,
+    required String underglowColorId,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedVehicle, vehicleId);
+      await prefs.setString(_keySelectedPaint, paintColorId);
+      await prefs.setString(_keySelectedWheel, wheelStyleId);
+      await prefs.setString(_keySelectedUnderglow, underglowColorId);
+      PlayerDataService.notifyDataChanged();
+    } catch (e) {
+      debugPrint('SharedPreferencesPlayerDataStorage customization save error: $e');
     }
   }
 }
@@ -383,6 +440,22 @@ class InMemoryPlayerDataStorage implements PlayerDataStorage {
       masterMuted: masterMuted,
       musicMuted: musicMuted,
       sfxMuted: sfxMuted,
+    );
+    PlayerDataService.notifyDataChanged();
+  }
+
+  @override
+  Future<void> saveVehicleCustomization({
+    required String vehicleId,
+    required String paintColorId,
+    required String wheelStyleId,
+    required String underglowColorId,
+  }) async {
+    data = data.copyWith(
+      selectedVehicleId: vehicleId,
+      selectedPaintColorId: paintColorId,
+      selectedWheelStyleId: wheelStyleId,
+      selectedUnderglowColorId: underglowColorId,
     );
     PlayerDataService.notifyDataChanged();
   }

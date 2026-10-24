@@ -31,7 +31,7 @@ void main() {
       engine.tick(1.0, 400.0, 800.0);
 
       expect(engine.player.speedMph, greaterThan(initialSpeed));
-      expect(engine.player.speedMph, lessThanOrEqualTo(ArcadeGameEngine.topSpeed));
+      expect(engine.player.speedMph, lessThanOrEqualTo(engine.topSpeed));
     });
 
     test('Braking decelerates the vehicle', () {

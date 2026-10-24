@@ -12,6 +12,19 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### 🚗 Feature 08: Garage, Car Selection & Customization (Flutter Only)
+- **3 Distinct Fictional Electric Sports Cars**:
+  - **Cyber Roadster (Prototype 01)**: Balanced all-rounder with sculpted teardrop canopy, dual-motor instant torque, and active aerodynamic stabilization (Top Speed: 250 MPH, Accel: 1.00x, Handling: 1.00x, Durability: Standard 1.00x). Unlocked by default.
+  - **Apex GT-E (Valkyrie Aero)**: Extreme Le Mans-style circuit prototype engineered with front splitter downforce, dual keel vents, central shark fin, and GT3 swan-neck rear wing (Top Speed: 242 MPH, Accel: +15% Torque surge, Handling: +18% Lateral agility, Durability: -25% Lightweight frame). Unlocked via `century` milestone (100+ MPH).
+  - **Hyperion Phantom (Titan Edition)**: Armored high-velocity interceptor featuring faceted stealth wedge armor, wide rear fenders, cooling louvers, and heavy airbrake flap (Top Speed: 268 MPH, Accel: -12% Torque off the line, Handling: -12% Heavier turning, Durability: +32% Kinetic armor absorption). Unlocked via `warp_speed` milestone (150+ MPH).
+- **Interactive Showroom Turntable Preview**: High-detail procedural `CustomPainter` rendering each car variant on an animated 3D turntable with ambient spotlight, concentric glowing floor rings, ground shadows, and underglow emission.
+- **Three-Tier Customization System**:
+  - **Body Paint**: 6 metallic multi-stop gradient palettes (Cyber Crimson, Electric Cyan, Stealth Obsidian, Acid Pulse, Solar Flare, Neon Violet) with milestone unlocks.
+  - **Wheel Rims**: 4 procedural wheel designs (Aero Turbine blades, Cyber Disc flat aero wheels, Starfire Split 5-spoke alloys, Carbon Lattice hexagonal mesh) with custom brake calipers.
+  - **Neon Underglow**: 6 ground lighting effects (Cyber Cyan, Laser Red, Acid Green, Pulse Violet, Solar Amber, Stealth Off) with soft floor emission shaders.
+- **Direct Gameplay Stat Integration**: Selected vehicle chassis dynamically scales `topSpeed`, progressive acceleration torque in `computeAccelerationRate`, lateral lane transitions in `baseSteeringSpeed`, and collision damage scaling in `_handleCollision`.
+- **Persistent Player Selections**: All equipped vehicles and accessories persist across sessions via lightweight local `PlayerDataStorage` (`shared_preferences`), automatically loading into arcade runs.
+
 ### 🏔️ Feature 07: Road Elevation & Career Progression (Flutter Only)
 - **Pseudo-3D Vertical Road Elevation**: Smooth uphill and downhill gradients integrated with custom canvas rendering. Utilizes cubic smoothstep transitions ($3t^2 - 2t^3$) and undulating sinusoidal elevation curves, shifting road slices and vanishing points while strictly maintaining monotonic depth ($\frac{dY}{dt} > 0$).
 - **Perspective Hitbox & Scenery Alignment**: Road markings, barriers, scenery, traffic vehicles, and player vehicle calculate vertical position via an identical quadratic formula ($\Delta y = -\text{elevationOffset} \times (h \times 0.12) \times (1 - t)^2$). Bounding hitboxes track visual geometry across all elevation changes with zero drift.

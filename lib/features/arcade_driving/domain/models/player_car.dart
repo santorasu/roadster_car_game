@@ -1,8 +1,14 @@
 import 'dart:math' as math;
 import 'dart:ui';
+import '../../../garage/domain/models/vehicle_definition.dart';
 
 /// Player car physics and state for the arcade driving prototype.
 class PlayerCar {
+  /// Active vehicle model definition and customization styling
+  VehicleCustomization customization;
+
+  VehicleDefinition get vehicle => customization.vehicle;
+
   /// Normalized horizontal position on the road (-1.0 = left edge, 1.0 = right edge)
   double lanePosition;
 
@@ -41,6 +47,7 @@ class PlayerCar {
   double topSpeedMph;
 
   PlayerCar({
+    VehicleCustomization? customization,
     this.lanePosition = 0.0,
     this.speedMph = 0.0,
     this.steerInput = 0.0,
@@ -54,7 +61,7 @@ class PlayerCar {
     this.isAtRoadBoundary = false,
     this.distanceTraveledMeters = 0.0,
     this.topSpeedMph = 0.0,
-  });
+  }) : customization = customization ?? const VehicleCustomization();
 
   /// Reset vehicle state for a new run
   void reset() {

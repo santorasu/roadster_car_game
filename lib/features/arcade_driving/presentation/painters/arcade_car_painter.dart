@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/models/player_car.dart';
+import '../../../garage/domain/models/vehicle_definition.dart';
 
 /// Renders the enhanced Cyber Roadster electric hypercar with realistic proportions,
 /// multi-layered body panels, aerodynamic aero kit, visible wheels and tires,
@@ -182,29 +183,32 @@ class ArcadeCarPainter extends CustomPainter {
       shadowPaint,
     );
 
-    // 2. High-Tech Cyan / Red Underglow Ground Effect
-    final speedRatio = (player.speedMph / 250.0).clamp(0.0, 1.0);
-    final underglowColor = player.isBraking
-        ? const Color(0xFFFF1744)
-        : (player.isAccelerating ? const Color(0xFF00F0FF) : const Color(0xFF0099FF));
-    final underglowAlpha = 0.25 + 0.35 * speedRatio;
+    // 2. High-Tech Neon Underglow Ground Effect (Customizable)
+    final underglowOpt = player.customization.underglowOption;
+    if (underglowOpt.color != Colors.transparent) {
+      final speedRatio = (player.speedMph / player.vehicle.topSpeedMph).clamp(0.0, 1.0);
+      final underglowColor = player.isBraking
+          ? const Color(0xFFFF1744)
+          : underglowOpt.color;
+      final underglowAlpha = 0.25 + 0.35 * speedRatio;
 
-    final underglowPaint = Paint()
-      ..shader = RadialGradient(
-        center: Alignment.center,
-        radius: 0.75,
-        colors: [
-          underglowColor.withValues(alpha: underglowAlpha),
-          underglowColor.withValues(alpha: underglowAlpha * 0.4),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromCenter(center: Offset(0, ch * 0.05), width: cw * 1.4, height: ch * 1.2))
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+      final underglowPaint = Paint()
+        ..shader = RadialGradient(
+          center: Alignment.center,
+          radius: 0.75,
+          colors: [
+            underglowColor.withValues(alpha: underglowAlpha),
+            underglowColor.withValues(alpha: underglowAlpha * 0.4),
+            Colors.transparent,
+          ],
+        ).createShader(Rect.fromCenter(center: Offset(0, ch * 0.05), width: cw * 1.4, height: ch * 1.2))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
 
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(0, ch * 0.05), width: cw * 1.25, height: ch * 1.1),
-      underglowPaint,
-    );
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(0, ch * 0.05), width: cw * 1.25, height: ch * 1.1),
+        underglowPaint,
+      );
+    }
   }
 
   void _drawWheelsAndTires(Canvas canvas, double cw, double ch) {
@@ -229,13 +233,14 @@ class ArcadeCarPainter extends CustomPainter {
         colors: [Color(0xFF141416), Color(0xFF28282E), Color(0xFF121214)],
       ).createShader(Rect.fromLTWH(-wheelW, -wheelH, wheelW * 2, wheelH * 2));
 
-    final rimPaint = Paint()..color = const Color(0xFF555D6A);
+    final wheelCustom = player.customization.wheelStyle;
+    final rimPaint = Paint()..color = wheelCustom.rimColor;
     final rimHighlightPaint = Paint()
-      ..color = const Color(0xFF8E99A8)
+      ..color = wheelCustom.highlightColor
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
-    final caliperPaint = Paint()..color = const Color(0xFFFF1E38);
+    final caliperPaint = Paint()..color = wheelCustom.caliperColor;
 
     for (int i = 0; i < wheelPositions.length; i++) {
       final pos = wheelPositions[i];
@@ -268,10 +273,44 @@ class ArcadeCarPainter extends CustomPainter {
       );
       canvas.drawRRect(RRect.fromRectAndRadius(caliperRect, const Radius.circular(1.5)), caliperPaint);
 
-      // Alloy Turbine Rim Disc
+      // Alloy Rim Disc & Spoke Design based on WheelRimType
       final rimRect = Rect.fromCenter(center: Offset.zero, width: wheelW * 0.7, height: wheelH * 0.75);
       canvas.drawRRect(RRect.fromRectAndRadius(rimRect, const Radius.circular(2)), rimPaint);
       canvas.drawRRect(RRect.fromRectAndRadius(rimRect, const Radius.circular(2)), rimHighlightPaint);
+
+      switch (wheelCustom.type) {
+        case WheelRimType.turbine:
+          final bladePaint = Paint()
+            ..color = wheelCustom.highlightColor.withValues(alpha: 0.6)
+            ..strokeWidth = 1.0;
+          canvas.drawLine(Offset(-wheelW * 0.25, -wheelH * 0.25), Offset(wheelW * 0.25, wheelH * 0.25), bladePaint);
+          canvas.drawLine(Offset(wheelW * 0.25, -wheelH * 0.25), Offset(-wheelW * 0.25, wheelH * 0.25), bladePaint);
+          break;
+        case WheelRimType.cyberDisc:
+          final discGlow = Paint()
+            ..color = wheelCustom.highlightColor.withValues(alpha: 0.7)
+            ..strokeWidth = 1.5
+            ..style = PaintingStyle.stroke;
+          canvas.drawCircle(Offset.zero, wheelW * 0.22, discGlow);
+          break;
+        case WheelRimType.starfireSplit:
+          final spokePaint = Paint()
+            ..color = wheelCustom.highlightColor.withValues(alpha: 0.8)
+            ..strokeWidth = 1.2;
+          for (int s = 0; s < 5; s++) {
+            final a = s * (math.pi * 2 / 5);
+            canvas.drawLine(Offset.zero, Offset(math.cos(a) * wheelW * 0.3, math.sin(a) * wheelH * 0.3), spokePaint);
+          }
+          break;
+        case WheelRimType.carbonLattice:
+          final latticePaint = Paint()
+            ..color = wheelCustom.highlightColor.withValues(alpha: 0.5)
+            ..strokeWidth = 0.8;
+          canvas.drawLine(Offset(-wheelW * 0.25, 0), Offset(wheelW * 0.25, 0), latticePaint);
+          canvas.drawLine(Offset(0, -wheelH * 0.25), Offset(0, wheelH * 0.25), latticePaint);
+          canvas.drawCircle(Offset.zero, wheelW * 0.15, rimHighlightPaint);
+          break;
+      }
 
       canvas.restore();
     }
@@ -330,43 +369,68 @@ class ArcadeCarPainter extends CustomPainter {
   void _drawHypercarBody(Canvas canvas, double cw, double ch) {
     final halfW = cw / 2;
     final halfH = ch / 2;
+    final bodyStyle = player.customization.vehicle.bodyStyle;
 
-    // Muscular Roadster Body Silhouette with flared fenders and coke-bottle waist
-    final bodyPath = Path()
-      // Nose cone apex
-      ..moveTo(0, -halfH * 0.98)
-      // Front right nose curve into right fender
-      ..cubicTo(halfW * 0.45, -halfH * 0.98, halfW * 0.82, -halfH * 0.78, halfW * 0.88, -halfH * 0.45)
-      // Front wheel arch flare
-      ..cubicTo(halfW * 0.92, -halfH * 0.35, halfW * 0.94, -halfH * 0.22, halfW * 0.86, -halfH * 0.12)
-      // Waist tuck (sculpted door air intake)
-      ..cubicTo(halfW * 0.74, 0.0, halfW * 0.74, halfH * 0.15, halfW * 0.88, halfH * 0.28)
-      // Wide rear muscular haunch
-      ..cubicTo(halfW * 0.98, halfH * 0.45, halfW * 0.94, halfH * 0.78, halfW * 0.76, halfH * 0.94)
-      // Rear bumper & tail deck
-      ..lineTo(-halfW * 0.76, halfH * 0.94)
-      // Left rear muscular haunch
-      ..cubicTo(-halfW * 0.94, halfH * 0.78, -halfW * 0.98, halfH * 0.45, -halfW * 0.88, halfH * 0.28)
-      // Left waist tuck
-      ..cubicTo(-halfW * 0.74, halfH * 0.15, -halfW * 0.74, 0.0, -halfW * 0.86, -halfH * 0.12)
-      // Left front wheel arch flare
-      ..cubicTo(-halfW * 0.94, -halfH * 0.22, -halfW * 0.92, -halfH * 0.35, -halfW * 0.88, -halfH * 0.45)
-      // Back to nose cone
-      ..cubicTo(-halfW * 0.82, -halfH * 0.78, -halfW * 0.45, -halfH * 0.98, 0, -halfH * 0.98)
-      ..close();
+    final bodyPath = Path();
+    if (bodyStyle == VehicleBodyStyle.valkyrieAero) {
+      // Aerodynamic Le Mans Circuit Prototype Silhouette
+      bodyPath
+        ..moveTo(0, -halfH * 1.04) // Low tapered aerodynamic nose
+        ..lineTo(halfW * 0.35, -halfH * 0.98)
+        ..cubicTo(halfW * 0.55, -halfH * 0.95, halfW * 0.85, -halfH * 0.75, halfW * 0.92, -halfH * 0.42)
+        ..lineTo(halfW * 0.88, -halfH * 0.12)
+        ..cubicTo(halfW * 0.65, 0.0, halfW * 0.65, halfH * 0.18, halfW * 0.90, halfH * 0.35)
+        ..cubicTo(halfW * 0.98, halfH * 0.50, halfW * 0.92, halfH * 0.85, halfW * 0.82, halfH * 0.96)
+        ..lineTo(-halfW * 0.82, halfH * 0.96)
+        ..cubicTo(-halfW * 0.92, halfH * 0.85, -halfW * 0.98, halfH * 0.50, -halfW * 0.90, halfH * 0.35)
+        ..cubicTo(-halfW * 0.65, halfH * 0.18, -halfW * 0.65, 0.0, -halfW * 0.88, -halfH * 0.12)
+        ..lineTo(-halfW * 0.92, -halfH * 0.42)
+        ..cubicTo(-halfW * 0.85, -halfH * 0.75, -halfW * 0.55, -halfH * 0.95, -halfW * 0.35, -halfH * 0.98)
+        ..close();
+    } else if (bodyStyle == VehicleBodyStyle.titanStealth) {
+      // Angular Chiseled Armored Stealth Interceptor Silhouette
+      bodyPath
+        ..moveTo(0, -halfH * 1.02)
+        ..lineTo(halfW * 0.42, -halfH * 0.94)
+        ..lineTo(halfW * 0.84, -halfH * 0.72)
+        ..lineTo(halfW * 0.94, -halfH * 0.38)
+        ..lineTo(halfW * 0.86, -halfH * 0.08)
+        ..lineTo(halfW * 0.84, halfH * 0.22)
+        ..lineTo(halfW * 0.96, halfH * 0.44)
+        ..lineTo(halfW * 0.90, halfH * 0.88)
+        ..lineTo(halfW * 0.68, halfH * 0.96)
+        ..lineTo(-halfW * 0.68, halfH * 0.96)
+        ..lineTo(-halfW * 0.90, halfH * 0.88)
+        ..lineTo(-halfW * 0.96, halfH * 0.44)
+        ..lineTo(-halfW * 0.84, halfH * 0.22)
+        ..lineTo(-halfW * 0.86, -halfH * 0.08)
+        ..lineTo(-halfW * 0.94, -halfH * 0.38)
+        ..lineTo(-halfW * 0.84, -halfH * 0.72)
+        ..lineTo(-halfW * 0.42, -halfH * 0.94)
+        ..close();
+    } else {
+      // Iconic Sculpted Roadster with flared fenders and coke-bottle waist
+      bodyPath
+        ..moveTo(0, -halfH * 0.98)
+        ..cubicTo(halfW * 0.45, -halfH * 0.98, halfW * 0.82, -halfH * 0.78, halfW * 0.88, -halfH * 0.45)
+        ..cubicTo(halfW * 0.92, -halfH * 0.35, halfW * 0.94, -halfH * 0.22, halfW * 0.86, -halfH * 0.12)
+        ..cubicTo(halfW * 0.74, 0.0, halfW * 0.74, halfH * 0.15, halfW * 0.88, halfH * 0.28)
+        ..cubicTo(halfW * 0.98, halfH * 0.45, halfW * 0.94, halfH * 0.78, halfW * 0.76, halfH * 0.94)
+        ..lineTo(-halfW * 0.76, halfH * 0.94)
+        ..cubicTo(-halfW * 0.94, halfH * 0.78, -halfW * 0.98, halfH * 0.45, -halfW * 0.88, halfH * 0.28)
+        ..cubicTo(-halfW * 0.74, halfH * 0.15, -halfW * 0.74, 0.0, -halfW * 0.86, -halfH * 0.12)
+        ..cubicTo(-halfW * 0.94, -halfH * 0.22, -halfW * 0.92, -halfH * 0.35, -halfW * 0.88, -halfH * 0.45)
+        ..cubicTo(-halfW * 0.82, -halfH * 0.78, -halfW * 0.45, -halfH * 0.98, 0, -halfH * 0.98)
+        ..close();
+    }
 
-    // Multi-Tone Metallic Crimson Paint Shader
-    final bodyShader = const LinearGradient(
+    // Dynamic Multi-Tone Metallic Paint Shader from active customization
+    final bodyColors = player.customization.paintColor.gradientColors;
+    final bodyShader = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [
-        Color(0xFFFF3E55), // Front hood specular peak
-        Color(0xFFE51D33), // Rich cyber crimson
-        Color(0xFFBD0F22), // Mid-body saturated red
-        Color(0xFF880816), // Deep door tuck shadow
-        Color(0xFF5A000C), // Rear deck undertone
-      ],
-      stops: [0.0, 0.22, 0.52, 0.82, 1.0],
+      colors: bodyColors,
+      stops: const [0.0, 0.22, 0.52, 0.82, 1.0],
     ).createShader(Rect.fromCenter(center: Offset.zero, width: cw, height: ch));
 
     final bodyPaint = Paint()..shader = bodyShader;
@@ -379,34 +443,76 @@ class ArcadeCarPainter extends CustomPainter {
       ..strokeWidth = 1.2;
     canvas.drawPath(bodyPath, outlinePaint);
 
-    // Hood Aerodynamic Cooling Ducts & Feature Lines
-    final ductDarkPaint = Paint()
-      ..color = const Color(0xFF2B0307)
-      ..style = PaintingStyle.fill;
-    final ductAccentPaint = Paint()
-      ..color = const Color(0xFFFF6677).withValues(alpha: 0.4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+    // Body styling accents based on archetype
+    if (bodyStyle == VehicleBodyStyle.valkyrieAero) {
+      // 1. Central Carbon Shark-Fin Dorsal Spine
+      final finBasePaint = Paint()
+        ..color = const Color(0xFF0F1722)
+        ..strokeWidth = 3.5;
+      final finHighlight = Paint()
+        ..color = player.customization.paintColor.primaryColor.withValues(alpha: 0.85)
+        ..strokeWidth = 1.2;
+      canvas.drawLine(Offset(0, -halfH * 0.18), Offset(0, halfH * 0.78), finBasePaint);
+      canvas.drawLine(Offset(0, -halfH * 0.18), Offset(0, halfH * 0.78), finHighlight);
 
-    // Left hood duct
-    final leftDuct = Path()
-      ..moveTo(-cw * 0.22, -halfH * 0.68)
-      ..lineTo(-cw * 0.08, -halfH * 0.38)
-      ..lineTo(-cw * 0.16, -halfH * 0.36)
-      ..lineTo(-cw * 0.26, -halfH * 0.65)
-      ..close();
-    canvas.drawPath(leftDuct, ductDarkPaint);
-    canvas.drawPath(leftDuct, ductAccentPaint);
+      // 2. High-Downforce Front Aero Keel Ducts
+      final keelPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.6)
+        ..style = PaintingStyle.fill;
+      final leftKeel = Path()
+        ..moveTo(-cw * 0.28, -halfH * 0.72)
+        ..lineTo(-cw * 0.12, -halfH * 0.45)
+        ..lineTo(-cw * 0.20, -halfH * 0.42)
+        ..close();
+      final rightKeel = Path()
+        ..moveTo(cw * 0.28, -halfH * 0.72)
+        ..lineTo(cw * 0.12, -halfH * 0.45)
+        ..lineTo(cw * 0.20, -halfH * 0.42)
+        ..close();
+      canvas.drawPath(leftKeel, keelPaint);
+      canvas.drawPath(rightKeel, keelPaint);
+    } else if (bodyStyle == VehicleBodyStyle.titanStealth) {
+      // Heavy Armored Rear Deck Louvers
+      final louverPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.65)
+        ..strokeWidth = 2.2;
+      final louverHighlight = Paint()
+        ..color = Colors.white.withValues(alpha: 0.2)
+        ..strokeWidth = 0.8;
+      for (int i = 0; i < 4; i++) {
+        final y = halfH * 0.58 + (i * 6.0);
+        final louverW = cw * (0.28 - i * 0.03);
+        canvas.drawLine(Offset(-louverW, y), Offset(louverW, y), louverPaint);
+        canvas.drawLine(Offset(-louverW, y + 1), Offset(louverW, y + 1), louverHighlight);
+      }
+    } else {
+      // Classic Roadster Aerodynamic Cooling Ducts
+      final ductDarkPaint = Paint()
+        ..color = const Color(0xFF2B0307)
+        ..style = PaintingStyle.fill;
+      final ductAccentPaint = Paint()
+        ..color = player.customization.paintColor.primaryColor.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
 
-    // Right hood duct
-    final rightDuct = Path()
-      ..moveTo(cw * 0.22, -halfH * 0.68)
-      ..lineTo(cw * 0.08, -halfH * 0.38)
-      ..lineTo(cw * 0.16, -halfH * 0.36)
-      ..lineTo(cw * 0.26, -halfH * 0.65)
-      ..close();
-    canvas.drawPath(rightDuct, ductDarkPaint);
-    canvas.drawPath(rightDuct, ductAccentPaint);
+      final leftDuct = Path()
+        ..moveTo(-cw * 0.22, -halfH * 0.68)
+        ..lineTo(-cw * 0.08, -halfH * 0.38)
+        ..lineTo(-cw * 0.16, -halfH * 0.36)
+        ..lineTo(-cw * 0.26, -halfH * 0.65)
+        ..close();
+      canvas.drawPath(leftDuct, ductDarkPaint);
+      canvas.drawPath(leftDuct, ductAccentPaint);
+
+      final rightDuct = Path()
+        ..moveTo(cw * 0.22, -halfH * 0.68)
+        ..lineTo(cw * 0.08, -halfH * 0.38)
+        ..lineTo(cw * 0.16, -halfH * 0.36)
+        ..lineTo(cw * 0.26, -halfH * 0.65)
+        ..close();
+      canvas.drawPath(rightDuct, ductDarkPaint);
+      canvas.drawPath(rightDuct, ductAccentPaint);
+    }
 
     // Side Door Shutlines & Air Intake Ducts
     final seamPaint = Paint()
@@ -600,27 +706,74 @@ class ArcadeCarPainter extends CustomPainter {
 
     final halfW = cw / 2;
     final halfH = ch / 2;
+    final bodyStyle = player.vehicle.bodyStyle;
 
-    final spoilerPaint = Paint()
-      ..color = const Color(0xFF14161C)
-      ..style = PaintingStyle.fill;
-    final spoilerEdge = Paint()
-      ..color = const Color(0xFF00F0FF).withValues(alpha: 0.6)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
+    if (bodyStyle == VehicleBodyStyle.valkyrieAero) {
+      // Wide GT3 swan-neck carbon wing with aerodynamic endplates
+      final wingPaint = Paint()..color = const Color(0xFF10141A);
+      final wingAccent = Paint()
+        ..color = player.customization.paintColor.accentColor
+        ..strokeWidth = 1.2
+        ..style = PaintingStyle.stroke;
 
-    final spoilerRect = Rect.fromCenter(
-      center: Offset(0, halfH * 0.82),
-      width: cw * 0.82,
-      height: ch * 0.045,
-    );
-    canvas.drawRRect(RRect.fromRectAndRadius(spoilerRect, const Radius.circular(2)), spoilerPaint);
-    canvas.drawRRect(RRect.fromRectAndRadius(spoilerRect, const Radius.circular(2)), spoilerEdge);
+      final wingRect = Rect.fromCenter(
+        center: Offset(0, halfH * 0.84),
+        width: cw * 0.96,
+        height: ch * 0.05,
+      );
+      canvas.drawRRect(RRect.fromRectAndRadius(wingRect, const Radius.circular(2)), wingPaint);
+      canvas.drawRRect(RRect.fromRectAndRadius(wingRect, const Radius.circular(2)), wingAccent);
 
-    // Dual carbon stanchions
-    final stanchionPaint = Paint()..color = const Color(0xFF0B0D12);
-    canvas.drawRect(Rect.fromLTWH(-halfW * 0.45, halfH * 0.82, 3, ch * 0.06), stanchionPaint);
-    canvas.drawRect(Rect.fromLTWH(halfW * 0.45 - 3, halfH * 0.82, 3, ch * 0.06), stanchionPaint);
+      // Swan-neck stanchions & endplates
+      final carbonPaint = Paint()..color = const Color(0xFF090B0E);
+      canvas.drawRect(Rect.fromLTWH(-cw * 0.49, halfH * 0.78, 4, ch * 0.11), carbonPaint);
+      canvas.drawRect(Rect.fromLTWH(cw * 0.49 - 4, halfH * 0.78, 4, ch * 0.11), carbonPaint);
+      canvas.drawRect(Rect.fromLTWH(-halfW * 0.35, halfH * 0.76, 3, ch * 0.12), carbonPaint);
+      canvas.drawRect(Rect.fromLTWH(halfW * 0.35 - 3, halfH * 0.76, 3, ch * 0.12), carbonPaint);
+    } else if (bodyStyle == VehicleBodyStyle.titanStealth) {
+      // Heavy armored airbrake flap with aggressive faceted angles
+      final flapPaint = Paint()..color = const Color(0xFF1E2129);
+      final flapEdge = Paint()
+        ..color = const Color(0xFFFF9E00).withValues(alpha: 0.8)
+        ..strokeWidth = 1.4
+        ..style = PaintingStyle.stroke;
+
+      final flapPath = Path()
+        ..moveTo(-cw * 0.38, halfH * 0.78)
+        ..lineTo(cw * 0.38, halfH * 0.78)
+        ..lineTo(cw * 0.32, halfH * 0.86)
+        ..lineTo(-cw * 0.32, halfH * 0.86)
+        ..close();
+      canvas.drawPath(flapPath, flapPaint);
+      canvas.drawPath(flapPath, flapEdge);
+
+      // Hydraulic ram cylinders
+      final ramPaint = Paint()..color = const Color(0xFF6B7280);
+      canvas.drawRect(Rect.fromLTWH(-cw * 0.22, halfH * 0.84, 4, ch * 0.05), ramPaint);
+      canvas.drawRect(Rect.fromLTWH(cw * 0.22 - 4, halfH * 0.84, 4, ch * 0.05), ramPaint);
+    } else {
+      // Roadster sleek low-profile active spoiler
+      final spoilerPaint = Paint()
+        ..color = const Color(0xFF14161C)
+        ..style = PaintingStyle.fill;
+      final spoilerEdge = Paint()
+        ..color = const Color(0xFF00F0FF).withValues(alpha: 0.6)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke;
+
+      final spoilerRect = Rect.fromCenter(
+        center: Offset(0, halfH * 0.82),
+        width: cw * 0.82,
+        height: ch * 0.045,
+      );
+      canvas.drawRRect(RRect.fromRectAndRadius(spoilerRect, const Radius.circular(2)), spoilerPaint);
+      canvas.drawRRect(RRect.fromRectAndRadius(spoilerRect, const Radius.circular(2)), spoilerEdge);
+
+      // Dual carbon stanchions
+      final stanchionPaint = Paint()..color = const Color(0xFF0B0D12);
+      canvas.drawRect(Rect.fromLTWH(-halfW * 0.45, halfH * 0.82, 3, ch * 0.06), stanchionPaint);
+      canvas.drawRect(Rect.fromLTWH(halfW * 0.45 - 3, halfH * 0.82, 3, ch * 0.06), stanchionPaint);
+    }
   }
 
   void _drawRecoveryShieldAura(Canvas canvas, double cw, double ch) {
@@ -671,6 +824,7 @@ class ArcadeCarPainter extends CustomPainter {
         oldDelegate.player.isAccelerating != player.isAccelerating ||
         oldDelegate.player.isBraking != player.isBraking ||
         oldDelegate.player.collisionRecoveryTimer != player.collisionRecoveryTimer ||
-        oldDelegate.player.isAtRoadBoundary != player.isAtRoadBoundary;
+        oldDelegate.player.isAtRoadBoundary != player.isAtRoadBoundary ||
+        oldDelegate.player.customization != player.customization;
   }
 }
