@@ -6,14 +6,17 @@ import '../../../../core/storage/player_data_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/cyber_button.dart';
 import '../../domain/models/arcade_game_state.dart';
+import '../../domain/models/game_mode.dart';
 import '../../domain/models/player_car.dart';
+import '../../../missions/domain/models/mission_definition.dart';
 import 'audio_settings_dialog.dart';
 
-/// Game-over overlay screen displayed when vehicle hull integrity reaches zero.
+/// Game-over overlay screen displayed when vehicle hull integrity reaches zero or Time Trial expires.
 class ArcadeGameOverDialog extends StatelessWidget {
   final ArcadeGameState state;
   final PlayerCar player;
   final List<String> newlyUnlockedMilestones;
+  final List<MissionDefinition> newlyCompletedMissions;
   final VoidCallback onRestart;
   final VoidCallback onExit;
 
@@ -22,14 +25,21 @@ class ArcadeGameOverDialog extends StatelessWidget {
     required this.state,
     required this.player,
     this.newlyUnlockedMilestones = const [],
+    this.newlyCompletedMissions = const [],
     required this.onRestart,
     required this.onExit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isTimeTrial = state.gameMode == GameMode.timeTrial;
     final isNewRecord = state.score >= state.highScore && state.score > 0;
     final distanceKm = (state.distanceMeters / 1000.0).toStringAsFixed(2);
+    final badgeText = state.gameOverReason ??
+        (isTimeTrial ? 'TIME TRIAL COMPLETE' : 'HULL CRITICALLY COMPROMISED');
+    final titleText = (isTimeTrial && player.health > 0.0)
+        ? 'TIME TRIAL RESULTS'
+        : 'MISSION FAILED';
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -42,12 +52,13 @@ class ArcadeGameOverDialog extends StatelessWidget {
               color: AppColors.surface.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(20.r),
               border: Border.all(
-                color: AppColors.roadsterRed,
+                color: isTimeTrial ? const Color(0xFFFFB300) : AppColors.roadsterRed,
                 width: 2.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.roadsterRed.withValues(alpha: 0.4),
+                  color: (isTimeTrial ? const Color(0xFFFFB300) : AppColors.roadsterRed)
+                      .withValues(alpha: 0.4),
                   blurRadius: 32.r,
                   spreadRadius: 3.r,
                 ),
@@ -56,34 +67,36 @@ class ArcadeGameOverDialog extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Warning Badge
+                // Warning / Completion Badge
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
                   decoration: BoxDecoration(
-                    color: AppColors.roadsterRed.withValues(alpha: 0.18),
+                    color: (isTimeTrial ? const Color(0xFFFFB300) : AppColors.roadsterRed)
+                        .withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(6.r),
                     border: Border.all(
-                      color: AppColors.roadsterRed.withValues(alpha: 0.6),
+                      color: (isTimeTrial ? const Color(0xFFFFB300) : AppColors.roadsterRed)
+                          .withValues(alpha: 0.6),
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.warning_amber_rounded,
-                        color: AppColors.roadsterRed,
+                        isTimeTrial ? Icons.timer_rounded : Icons.warning_amber_rounded,
+                        color: isTimeTrial ? const Color(0xFFFFB300) : AppColors.roadsterRed,
                         size: 14.r,
                       ),
                       SizedBox(width: 4.w),
                       Flexible(
                         child: Text(
-                          'HULL CRITICALLY COMPROMISED',
+                          badgeText,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 9.sp,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.8,
-                            color: AppColors.roadsterRed,
+                            color: isTimeTrial ? const Color(0xFFFFB300) : AppColors.roadsterRed,
                           ),
                         ),
                       ),
@@ -94,11 +107,11 @@ class ArcadeGameOverDialog extends StatelessWidget {
                 SizedBox(height: 12.h),
 
                 Text(
-                  'MISSION FAILED',
+                  titleText,
                   style: TextStyle(
-                    fontSize: 24.sp,
+                    fontSize: 22.sp,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
+                    letterSpacing: 1.5,
                     color: Colors.white,
                   ),
                 ),
@@ -134,7 +147,7 @@ class ArcadeGameOverDialog extends StatelessWidget {
                   SizedBox(height: 10.h),
                 ],
 
-                // Run Telemetry Statistics Card (Distance, Speed, Sector Achievements)
+                // Run Telemetry Statistics Card (Mode-Specific)
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
                   decoration: BoxDecoration(
@@ -144,25 +157,122 @@ class ArcadeGameOverDialog extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.1),
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      _buildStatRow('FINAL SCORE', state.score.toString(), isHighlight: true),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
-                      _buildStatRow('BEST SCORE', state.highScore.toString()),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
-                      _buildStatRow('DISTANCE', '$distanceKm KM'),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
-                      _buildStatRow('TOP SPEED', '${player.topSpeedMph.round()} MPH'),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
-                      _buildStatRow(
-                        'SECTOR REACHED',
-                        'SEC 0${state.sectorIndex}: ${state.currentSectorName}',
-                      ),
-                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
-                      _buildStatRow('MAX MULTIPLIER', '${state.comboMultiplier.toStringAsFixed(1)}x'),
-                    ],
-                  ),
+                  child: isTimeTrial
+                      ? Column(
+                          children: [
+                            _buildStatRow(
+                              'DISTANCE COVERED',
+                              '${state.distanceMeters.toStringAsFixed(1)} M',
+                              isHighlight: true,
+                            ),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow(
+                              'SURVIVAL TIME',
+                              '${state.timeElapsedSeconds.toStringAsFixed(1)}s',
+                            ),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow(
+                              'NEAR-MISS OVERTAKES',
+                              '${state.nearMissCount}',
+                            ),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow('FINAL SCORE', state.score.toString()),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow('TOP SPEED', '${player.topSpeedMph.round()} MPH'),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _buildStatRow('FINAL SCORE', state.score.toString(), isHighlight: true),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow('BEST SCORE', state.highScore.toString()),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow('DISTANCE', '$distanceKm KM'),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow('TOP SPEED', '${player.topSpeedMph.round()} MPH'),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow(
+                              'SECTOR REACHED',
+                              'SEC 0${state.sectorIndex}: ${state.currentSectorName}',
+                            ),
+                            Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                            _buildStatRow('MAX MULTIPLIER', '${state.comboMultiplier.toStringAsFixed(1)}x'),
+                          ],
+                        ),
                 ),
+
+                // Newly Completed Missions Section
+                if (newlyCompletedMissions.isNotEmpty) ...[
+                  SizedBox(height: 10.h),
+                  Container(
+                    key: const Key('game_over_completed_missions_list'),
+                    width: double.infinity,
+                    padding: EdgeInsets.all(10.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E676).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10.r),
+                      border: Border.all(
+                        color: const Color(0xFF00E676).withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.workspace_premium_rounded, color: const Color(0xFF00E676), size: 14.r),
+                            SizedBox(width: 4.w),
+                            Text(
+                              'MISSION COMPLETED!',
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF00E676),
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6.h),
+                        ...newlyCompletedMissions.map((mission) => Padding(
+                          padding: EdgeInsets.only(bottom: 4.h),
+                          child: Row(
+                            children: [
+                              Icon(mission.icon, size: 12.r, color: Colors.white70),
+                              SizedBox(width: 6.w),
+                              Expanded(
+                                child: Text(
+                                  mission.title,
+                                  style: TextStyle(
+                                    fontSize: 9.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00E676).withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  border: Border.all(color: const Color(0xFF00E676)),
+                                ),
+                                child: Text(
+                                  '+${mission.rewardPoints} PTS',
+                                  style: TextStyle(
+                                    fontSize: 8.5.sp,
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF00E676),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // Newly Unlocked Career Milestones
                 if (newlyUnlockedMilestones.isNotEmpty) ...[

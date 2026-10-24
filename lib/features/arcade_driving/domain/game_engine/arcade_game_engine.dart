@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/arcade_game_state.dart';
+import '../models/game_mode.dart';
 import '../models/game_particle.dart';
 import '../models/obstacle_vehicle.dart';
 import '../models/player_car.dart';
@@ -68,10 +69,13 @@ class ArcadeGameEngine {
   }
 
   /// Starts or resumes the game
-  void start() {
+  void start({GameMode? mode}) {
+    if (mode != null) {
+      state.gameMode = mode;
+    }
     if (state.status == ArcadeGameStatus.ready ||
         state.status == ArcadeGameStatus.gameOver) {
-      reset();
+      reset(mode: mode);
     }
     state.status = ArcadeGameStatus.playing;
   }
@@ -91,17 +95,17 @@ class ArcadeGameEngine {
   }
 
   /// Resets and starts a fresh game session
-  void restart() {
-    reset();
-    start();
+  void restart({GameMode? mode}) {
+    reset(mode: mode);
+    start(mode: mode);
   }
 
   /// Resets all entities to initial state
-  void reset() {
+  void reset({GameMode? mode}) {
     final prevHighScore = state.highScore;
     player.reset();
     player.speedMph = 35.0; // Initial rolling start
-    state.reset();
+    state.reset(mode: mode);
     state.highScore = prevHighScore;
     state.currentSectorName = trackManager.sections.isNotEmpty
         ? trackManager.sections.first.name
@@ -119,6 +123,37 @@ class ArcadeGameEngine {
   /// Main physics and game logic tick
   void tick(double dt, double screenWidth, double screenHeight) {
     if (state.status != ArcadeGameStatus.playing) return;
+
+    // Track survival time
+    state.timeElapsedSeconds += dt;
+
+    // Time Trial mode countdown
+    if (state.gameMode == GameMode.timeTrial) {
+      state.timeRemainingSeconds -= dt;
+      if (state.timeRemainingSeconds <= 0.0) {
+        state.timeRemainingSeconds = 0.0;
+        state.status = ArcadeGameStatus.gameOver;
+        state.gameOverReason = 'TIME EXPIRED';
+        if (state.score > state.highScore) {
+          state.highScore = state.score;
+        }
+        return;
+      }
+    }
+
+    // Health depletion game over check
+    if (player.health <= 0.0) {
+      state.status = ArcadeGameStatus.gameOver;
+      state.gameOverReason ??= 'VEHICLE CRITICAL DAMAGE';
+      if (state.score > state.highScore) {
+        state.highScore = state.score;
+      }
+      return;
+    }
+
+    if (state.bonusTimeFlashTimer > 0.0) {
+      state.bonusTimeFlashTimer = math.max(0.0, state.bonusTimeFlashTimer - dt);
+    }
 
     // 0. Update Collision Recovery Window
     if (player.collisionRecoveryTimer > 0.0) {
@@ -291,9 +326,20 @@ class ArcadeGameEngine {
       }
 
       // Check near-miss overtaking bonus
-      if (!obstacle.hasCollided && obstacle.yProgress >= 0.90 && obstacle.yProgress < 0.95) {
-        // Successfully passed
+      if (!obstacle.hasCollided &&
+          !obstacle.hasAwardedNearMiss &&
+          obstacle.yProgress >= 0.90 &&
+          obstacle.yProgress < 0.95) {
+        obstacle.hasAwardedNearMiss = true;
+        state.nearMissCount++;
         state.score += 250;
+
+        // In Time Trial mode, award bonus time!
+        if (state.gameMode == GameMode.timeTrial) {
+          final bonus = GameModeInfo.timeTrial.nearMissBonusSeconds;
+          state.timeRemainingSeconds += bonus;
+          state.bonusTimeFlashTimer = 1.0;
+        }
       }
 
       // Remove obstacles that have scrolled past bottom
@@ -413,6 +459,7 @@ class ArcadeGameEngine {
     // Check Game Over
     if (player.health <= 0.0) {
       state.status = ArcadeGameStatus.gameOver;
+      state.gameOverReason = 'VEHICLE CRITICAL DAMAGE';
       if (state.score > state.highScore) {
         state.highScore = state.score;
       }

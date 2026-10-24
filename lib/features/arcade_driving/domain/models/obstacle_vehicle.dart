@@ -28,6 +28,9 @@ class ObstacleVehicle {
   /// Has this obstacle already dealt collision damage?
   bool hasCollided;
 
+  /// Has this obstacle already awarded a near-miss bonus?
+  bool hasAwardedNearMiss;
+
   ObstacleVehicle({
     required this.id,
     required this.type,
@@ -36,6 +39,7 @@ class ObstacleVehicle {
     required this.yProgress,
     required this.speedMph,
     this.hasCollided = false,
+    this.hasAwardedNearMiss = false,
   });
 
   /// Get bounding rectangle in screen coordinates, accounting for road curvature and elevation

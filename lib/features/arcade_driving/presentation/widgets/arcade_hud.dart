@@ -3,7 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/audio/game_audio_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/arcade_game_state.dart';
+import '../../domain/models/game_mode.dart';
 import '../../domain/models/player_car.dart';
+import '../../../missions/domain/models/mission_definition.dart';
 import 'audio_settings_dialog.dart';
 
 /// Heads-Up Display rendering speed, distance, score, multiplier, audio access, and hull integrity.
@@ -11,12 +13,14 @@ class ArcadeHud extends StatelessWidget {
   final PlayerCar player;
   final ArcadeGameState state;
   final VoidCallback onPausePressed;
+  final MissionDefinition? activeToastMission;
 
   const ArcadeHud({
     super.key,
     required this.player,
     required this.state,
     required this.onPausePressed,
+    this.activeToastMission,
   });
 
   Color _getSpeedColor(double speed) {
@@ -233,6 +237,123 @@ class ArcadeHud extends StatelessWidget {
                   ),
                 ],
               ),
+
+              // Time Trial Countdown Timer Banner (Prominent Center)
+              if (state.gameMode == GameMode.timeTrial) ...[
+                SizedBox(height: 4.h),
+                Center(
+                  child: Container(
+                    key: const Key('hud_time_trial_timer'),
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: state.timeRemainingSeconds <= 10.0
+                          ? const Color(0xFFFF1744).withValues(alpha: 0.25)
+                          : AppColors.surface.withValues(alpha: 0.90),
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: state.timeRemainingSeconds <= 10.0
+                            ? const Color(0xFFFF1744)
+                            : const Color(0xFFFFB300),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: state.timeRemainingSeconds <= 10.0
+                              ? const Color(0xFFFF1744).withValues(alpha: 0.6)
+                              : const Color(0xFFFFB300).withValues(alpha: 0.35),
+                          blurRadius: 10.r,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 14.r,
+                          color: state.timeRemainingSeconds <= 10.0
+                              ? const Color(0xFFFF1744)
+                              : const Color(0xFFFFB300),
+                        ),
+                        SizedBox(width: 6.w),
+                        Text(
+                          'TIME REMAINING: ${state.timeRemainingSeconds.toStringAsFixed(1)}s',
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'monospace',
+                            color: state.timeRemainingSeconds <= 10.0
+                                ? const Color(0xFFFF1744)
+                                : Colors.white,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        if (state.bonusTimeFlashTimer > 0.0) ...[
+                          SizedBox(width: 6.w),
+                          Text(
+                            '+1.5s',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF00E5FF),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
+              // Real-time Mission Objective Completion Toast
+              if (activeToastMission != null) ...[
+                SizedBox(height: 4.h),
+                Center(
+                  child: Container(
+                    key: const Key('hud_mission_completed_toast'),
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00E676), Color(0xFF00B0FF)],
+                      ),
+                      borderRadius: BorderRadius.circular(6.r),
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E676).withValues(alpha: 0.6),
+                          blurRadius: 10.r,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          activeToastMission!.icon,
+                          size: 13.r,
+                          color: Colors.black,
+                        ),
+                        SizedBox(width: 5.w),
+                        Flexible(
+                          child: Text(
+                            'MISSION COMPLETED: ${activeToastMission!.title} (+${activeToastMission!.rewardPoints} PTS)',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 9.5.sp,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
 
               // Dynamic Sector Transition Announcement Banner
               if (state.sectorNotificationTimer > 0.0) ...[

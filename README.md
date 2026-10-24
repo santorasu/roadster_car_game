@@ -12,6 +12,27 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### ⏱️ Feature 09: Game Modes, Missions & Challenges (Flutter Only)
+- **Two Distinct Playable Game Modes**:
+  - **Endless Drive**: Classic survival mode where the driver navigates dynamic road curves, rolling elevations, and highway traffic to survive as long as possible while accumulating maximum combo multipliers, score, and distance until hull integrity depletion.
+  - **Time Trial (60s)**: High-intensity sprint against a 60-second countdown clock to maximize distance traveled. Near-miss overtaking maneuvers dynamically award **+1.5s time extensions** with an on-screen bonus flash, challenging drivers to balance aggressive weaving against crash risk.
+- **Career Missions & Directives System**:
+  - **8 Distinct Objectives** across 6 challenge archetypes:
+    - `FIRST LAUNCH`: Travel 500 meters in a single run (+1,000 PTS)
+    - `VELOCITY BREAKER`: Exceed 170 MPH (+1,500 PTS)
+    - `GHOST DRIFT`: Clean driving 400 meters with zero vehicle collisions (+2,000 PTS)
+    - `ENDURANCE TEST`: Survive on the highway for at least 40 continuous seconds (+1,500 PTS)
+    - `HAZARD SLICER`: Execute 4 close near-miss overtakes through traffic (+2,500 PTS)
+    - `CHRONO SPRINTER`: Cover at least 800 meters in Time Trial mode before time expires (+3,000 PTS)
+    - `CIRCUIT OVERLOAD`: Travel 1,800 meters through highway curves and elevations (+3,500 PTS)
+    - `FLAWLESS VECTOR`: Immaculate driving for 800 meters with zero collisions (+5,000 PTS)
+- **Real-Time Evaluation & In-Run Feedback**: Real-time evaluation during active gameplay; immediate HUD toast banner notification upon objective completion (`MISSION COMPLETED: <TITLE> (+<PTS> PTS)`); duplicate reward prevention guaranteed at storage level.
+- **Mode-Specific Results & Summary**: Enhanced Game Over recap displaying mode badges (`ENDLESS DRIVE` vs `TIME TRIAL`), termination reason (`TIME EXPIRED` or `VEHICLE CRITICAL DAMAGE`), distance covered, survival time, near-miss overtakes count, final score, top speed, and newly completed mission cards with reward point accumulation.
+- **Career Missions Sheet & Home Mode Selector**:
+  - `GameModeSelector` on Home Screen with interactive mode cards, mode rules, personal records, and quick access to missions.
+  - `MissionsSheet` modal bottom sheet displaying overall progress (`COMPLETED X / 8`, `REWARD POINTS Y PTS`), mission cards, requirements, and `CLAIMED` status badges.
+- **Full Architecture Persistence**: Seamless integration with local `PlayerDataStorage` preserving game mode preference, Time Trial best distance, completed mission IDs, and earned reward points without backend dependencies or cloud accounts.
+
 ### 🚗 Feature 08: Garage, Car Selection & Customization (Flutter Only)
 - **3 Distinct Fictional Electric Sports Cars**:
   - **Cyber Roadster (Prototype 01)**: Balanced all-rounder with sculpted teardrop canopy, dual-motor instant torque, and active aerodynamic stabilization (Top Speed: 250 MPH, Accel: 1.00x, Handling: 1.00x, Durability: Standard 1.00x). Unlocked by default.

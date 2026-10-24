@@ -1,3 +1,5 @@
+import 'game_mode.dart';
+
 enum ArcadeGameStatus {
   ready,
   playing,
@@ -20,6 +22,14 @@ class ArcadeGameState {
   double sectorNotificationTimer;
   int sectorIndex;
 
+  // Feature 09: Game Modes & Missions tracking
+  GameMode gameMode;
+  double timeRemainingSeconds;
+  double timeElapsedSeconds;
+  int nearMissCount;
+  double bonusTimeFlashTimer;
+  String? gameOverReason;
+
   ArcadeGameState({
     this.status = ArcadeGameStatus.ready,
     this.score = 0,
@@ -34,9 +44,15 @@ class ArcadeGameState {
     this.currentElevation = 0.0,
     this.sectorNotificationTimer = 0.0,
     this.sectorIndex = 1,
+    this.gameMode = GameMode.endlessDrive,
+    this.timeRemainingSeconds = 60.0,
+    this.timeElapsedSeconds = 0.0,
+    this.nearMissCount = 0,
+    this.bonusTimeFlashTimer = 0.0,
+    this.gameOverReason,
   });
 
-  void reset() {
+  void reset({GameMode? mode}) {
     status = ArcadeGameStatus.ready;
     score = 0;
     distanceMeters = 0.0;
@@ -49,5 +65,15 @@ class ArcadeGameState {
     currentElevation = 0.0;
     sectorNotificationTimer = 0.0;
     sectorIndex = 1;
+
+    if (mode != null) {
+      gameMode = mode;
+    }
+    timeRemainingSeconds = GameModeInfo.getByMode(gameMode).defaultTimeLimitSeconds;
+    timeElapsedSeconds = 0.0;
+    nearMissCount = 0;
+    bonusTimeFlashTimer = 0.0;
+    gameOverReason = null;
   }
 }
+

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/audio/game_audio_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/arcade_game_state.dart';
+import '../../domain/models/game_mode.dart';
 import '../controllers/arcade_game_controller.dart';
 import '../painters/arcade_car_painter.dart';
 import '../painters/arcade_obstacle_painter.dart';
@@ -17,7 +18,12 @@ import '../widgets/arcade_touch_controls.dart';
 /// Fullscreen arcade driving game screen executing Flutter-only physics and rendering,
 /// integrated with dynamic electric audio modulation, collision FX, and lifecycle management.
 class ArcadeGameScreen extends StatefulWidget {
-  const ArcadeGameScreen({super.key});
+  final GameMode? initialMode;
+
+  const ArcadeGameScreen({
+    super.key,
+    this.initialMode,
+  });
 
   @override
   State<ArcadeGameScreen> createState() => _ArcadeGameScreenState();
@@ -88,7 +94,11 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
     super.didChangeDependencies();
     if (!_initialized) {
       final size = MediaQuery.of(context).size;
-      _controller.init(width: size.width, height: size.height);
+      _controller.init(
+        width: size.width,
+        height: size.height,
+        mode: widget.initialMode,
+      );
       _initialized = true;
     } else {
       final size = MediaQuery.of(context).size;
@@ -200,7 +210,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
               ),
             ),
 
-            // 2. Heads-Up Display (Score, Speedometer, Hull, Distance, Audio, Pause)
+            // 2. Heads-Up Display (Score, Speedometer, Hull, Distance, Audio, Pause, Mission Toast)
             Positioned(
               top: 0,
               left: 0,
@@ -209,6 +219,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                 child: ArcadeHud(
                   player: _controller.player,
                   state: _controller.state,
+                  activeToastMission: _controller.activeToastMission,
                   onPausePressed: _handlePauseToggle,
                 ),
               ),
@@ -238,7 +249,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                   onRestart: () {
                     HapticFeedback.mediumImpact();
                     GameAudioService.instance.playUiTap();
-                    _controller.restart();
+                    _controller.restart(mode: widget.initialMode ?? _controller.state.gameMode);
                     _lastCollisionsCount = 0;
                     GameAudioService.instance.resumeAll();
                   },
@@ -256,10 +267,11 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                   state: _controller.state,
                   player: _controller.player,
                   newlyUnlockedMilestones: _controller.newlyUnlockedMilestones,
+                  newlyCompletedMissions: _controller.newlyCompletedMissions,
                   onRestart: () {
                     HapticFeedback.heavyImpact();
                     GameAudioService.instance.playUiTap();
-                    _controller.restart();
+                    _controller.restart(mode: widget.initialMode ?? _controller.state.gameMode);
                     _lastCollisionsCount = 0;
                     GameAudioService.instance.resumeAll();
                   },

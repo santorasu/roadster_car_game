@@ -103,6 +103,12 @@ class PlayerCareerData {
   final String selectedWheelStyleId;
   final String selectedUnderglowColorId;
 
+  // Feature 09: Game Modes, Missions & Challenges
+  final double timeTrialBestDistanceMeters;
+  final Set<String> completedMissionIds;
+  final int totalRewardPoints;
+  final String selectedGameMode; // 'endless' or 'time_trial'
+
   const PlayerCareerData({
     this.highScore = 0,
     this.bestDistanceMeters = 0.0,
@@ -120,6 +126,10 @@ class PlayerCareerData {
     this.selectedPaintColorId = 'cyber_crimson',
     this.selectedWheelStyleId = 'turbine_aero',
     this.selectedUnderglowColorId = 'neon_cyan',
+    this.timeTrialBestDistanceMeters = 0.0,
+    this.completedMissionIds = const {},
+    this.totalRewardPoints = 0,
+    this.selectedGameMode = 'endless',
   });
 
   PlayerCareerData copyWith({
@@ -139,6 +149,10 @@ class PlayerCareerData {
     String? selectedPaintColorId,
     String? selectedWheelStyleId,
     String? selectedUnderglowColorId,
+    double? timeTrialBestDistanceMeters,
+    Set<String>? completedMissionIds,
+    int? totalRewardPoints,
+    String? selectedGameMode,
   }) {
     return PlayerCareerData(
       highScore: highScore ?? this.highScore,
@@ -157,6 +171,10 @@ class PlayerCareerData {
       selectedPaintColorId: selectedPaintColorId ?? this.selectedPaintColorId,
       selectedWheelStyleId: selectedWheelStyleId ?? this.selectedWheelStyleId,
       selectedUnderglowColorId: selectedUnderglowColorId ?? this.selectedUnderglowColorId,
+      timeTrialBestDistanceMeters: timeTrialBestDistanceMeters ?? this.timeTrialBestDistanceMeters,
+      completedMissionIds: completedMissionIds ?? this.completedMissionIds,
+      totalRewardPoints: totalRewardPoints ?? this.totalRewardPoints,
+      selectedGameMode: selectedGameMode ?? this.selectedGameMode,
     );
   }
 }
@@ -173,6 +191,8 @@ abstract class PlayerDataStorage {
     required double distanceMeters,
     required double topSpeedMph,
     required int sectorsCleared,
+    String gameMode = 'endless',
+    double timeTrialDistance = 0.0,
   });
 
   Future<void> saveAudioSettings({
@@ -189,6 +209,15 @@ abstract class PlayerDataStorage {
     required String paintColorId,
     required String wheelStyleId,
     required String underglowColorId,
+  });
+
+  Future<void> saveGameMode(String gameMode);
+
+  /// Completes a mission and grants reward points if not previously completed.
+  /// Returns true if newly completed and awarded, false if already completed.
+  Future<bool> completeMission({
+    required String missionId,
+    required int rewardPoints,
   });
 }
 
@@ -213,11 +242,17 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
   static const String _keySelectedWheel = 'roadster_custom_wheel_id';
   static const String _keySelectedUnderglow = 'roadster_custom_underglow_id';
 
+  static const String _keyTimeTrialBestDistance = 'roadster_career_time_trial_best_distance';
+  static const String _keyCompletedMissions = 'roadster_career_completed_missions';
+  static const String _keyTotalRewardPoints = 'roadster_career_total_reward_points';
+  static const String _keySelectedGameMode = 'roadster_career_selected_game_mode';
+
   @override
   Future<PlayerCareerData> loadCareerData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final milestonesList = prefs.getStringList(_keyMilestones) ?? [];
+      final missionsList = prefs.getStringList(_keyCompletedMissions) ?? [];
 
       return PlayerCareerData(
         highScore: prefs.getInt(_keyHighScore) ?? 0,
@@ -236,6 +271,10 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
         selectedPaintColorId: prefs.getString(_keySelectedPaint) ?? 'cyber_crimson',
         selectedWheelStyleId: prefs.getString(_keySelectedWheel) ?? 'turbine_aero',
         selectedUnderglowColorId: prefs.getString(_keySelectedUnderglow) ?? 'neon_cyan',
+        timeTrialBestDistanceMeters: prefs.getDouble(_keyTimeTrialBestDistance) ?? 0.0,
+        completedMissionIds: missionsList.toSet(),
+        totalRewardPoints: prefs.getInt(_keyTotalRewardPoints) ?? 0,
+        selectedGameMode: prefs.getString(_keySelectedGameMode) ?? 'endless',
       );
     } catch (e) {
       debugPrint('SharedPreferencesPlayerDataStorage load error (using defaults): $e');
@@ -263,6 +302,10 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
       await prefs.setString(_keySelectedPaint, data.selectedPaintColorId);
       await prefs.setString(_keySelectedWheel, data.selectedWheelStyleId);
       await prefs.setString(_keySelectedUnderglow, data.selectedUnderglowColorId);
+      await prefs.setDouble(_keyTimeTrialBestDistance, data.timeTrialBestDistanceMeters);
+      await prefs.setStringList(_keyCompletedMissions, data.completedMissionIds.toList());
+      await prefs.setInt(_keyTotalRewardPoints, data.totalRewardPoints);
+      await prefs.setString(_keySelectedGameMode, data.selectedGameMode);
       PlayerDataService.notifyDataChanged();
     } catch (e) {
       debugPrint('SharedPreferencesPlayerDataStorage save error: $e');
@@ -275,6 +318,8 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
     required double distanceMeters,
     required double topSpeedMph,
     required int sectorsCleared,
+    String gameMode = 'endless',
+    double timeTrialDistance = 0.0,
   }) async {
     final current = await loadCareerData();
 
@@ -285,6 +330,11 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
     final newTopSpeed = topSpeedMph > current.topSpeedMph ? topSpeedMph : current.topSpeedMph;
     final newTotalRaces = current.totalRaces + 1;
     final newSectors = current.sectorsCleared + sectorsCleared;
+
+    final effectiveTTDist = (gameMode == 'time_trial') ? distanceMeters : timeTrialDistance;
+    final newTimeTrialBest = effectiveTTDist > current.timeTrialBestDistanceMeters
+        ? effectiveTTDist
+        : current.timeTrialBestDistanceMeters;
 
     final updatedMilestones = Set<String>.from(current.unlockedMilestones);
     final newlyUnlocked = <String>[];
@@ -313,6 +363,7 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
       totalRaces: newTotalRaces,
       sectorsCleared: newSectors,
       unlockedMilestones: updatedMilestones,
+      timeTrialBestDistanceMeters: newTimeTrialBest,
     );
 
     await saveCareerData(updated);
@@ -359,6 +410,36 @@ class SharedPreferencesPlayerDataStorage implements PlayerDataStorage {
       debugPrint('SharedPreferencesPlayerDataStorage customization save error: $e');
     }
   }
+
+  @override
+  Future<void> saveGameMode(String gameMode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keySelectedGameMode, gameMode);
+      PlayerDataService.notifyDataChanged();
+    } catch (e) {
+      debugPrint('SharedPreferencesPlayerDataStorage saveGameMode error: $e');
+    }
+  }
+
+  @override
+  Future<bool> completeMission({
+    required String missionId,
+    required int rewardPoints,
+  }) async {
+    final current = await loadCareerData();
+    if (current.completedMissionIds.contains(missionId)) {
+      return false; // Prevent duplicate rewards
+    }
+    final updatedMissions = Set<String>.from(current.completedMissionIds)..add(missionId);
+    final updatedPoints = current.totalRewardPoints + rewardPoints;
+    final updated = current.copyWith(
+      completedMissionIds: updatedMissions,
+      totalRewardPoints: updatedPoints,
+    );
+    await saveCareerData(updated);
+    return true;
+  }
 }
 
 /// In-memory storage implementation for deterministic, isolated unit and widget tests
@@ -382,6 +463,8 @@ class InMemoryPlayerDataStorage implements PlayerDataStorage {
     required double distanceMeters,
     required double topSpeedMph,
     required int sectorsCleared,
+    String gameMode = 'endless',
+    double timeTrialDistance = 0.0,
   }) async {
     final newHighScore = score > data.highScore ? score : data.highScore;
     final newBestDist = distanceMeters > data.bestDistanceMeters
@@ -390,6 +473,11 @@ class InMemoryPlayerDataStorage implements PlayerDataStorage {
     final newTopSpeed = topSpeedMph > data.topSpeedMph ? topSpeedMph : data.topSpeedMph;
     final newTotalRaces = data.totalRaces + 1;
     final newSectors = data.sectorsCleared + sectorsCleared;
+
+    final effectiveTTDist = (gameMode == 'time_trial') ? distanceMeters : timeTrialDistance;
+    final newTimeTrialBest = effectiveTTDist > data.timeTrialBestDistanceMeters
+        ? effectiveTTDist
+        : data.timeTrialBestDistanceMeters;
 
     final updatedMilestones = Set<String>.from(data.unlockedMilestones);
     final newlyUnlocked = <String>[];
@@ -418,6 +506,7 @@ class InMemoryPlayerDataStorage implements PlayerDataStorage {
       totalRaces: newTotalRaces,
       sectorsCleared: newSectors,
       unlockedMilestones: updatedMilestones,
+      timeTrialBestDistanceMeters: newTimeTrialBest,
     );
 
     PlayerDataService.notifyDataChanged();
@@ -458,6 +547,30 @@ class InMemoryPlayerDataStorage implements PlayerDataStorage {
       selectedUnderglowColorId: underglowColorId,
     );
     PlayerDataService.notifyDataChanged();
+  }
+
+  @override
+  Future<void> saveGameMode(String gameMode) async {
+    data = data.copyWith(selectedGameMode: gameMode);
+    PlayerDataService.notifyDataChanged();
+  }
+
+  @override
+  Future<bool> completeMission({
+    required String missionId,
+    required int rewardPoints,
+  }) async {
+    if (data.completedMissionIds.contains(missionId)) {
+      return false; // Prevent duplicate rewards
+    }
+    final updatedMissions = Set<String>.from(data.completedMissionIds)..add(missionId);
+    final updatedPoints = data.totalRewardPoints + rewardPoints;
+    data = data.copyWith(
+      completedMissionIds: updatedMissions,
+      totalRewardPoints: updatedPoints,
+    );
+    PlayerDataService.notifyDataChanged();
+    return true;
   }
 }
 

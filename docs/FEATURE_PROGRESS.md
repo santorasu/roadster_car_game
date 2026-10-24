@@ -12,7 +12,8 @@
 | **FEATURE 06** | **Dynamic Roads & Advanced Gameplay** | **Android Only** | **COMPLETED & VERIFIED** |
 | **FEATURE 07** | **Road Elevation & Career Progression** | **Android Only** | **COMPLETED & VERIFIED** |
 | **FEATURE 08** | **Garage, Car Selection & Customization** | **Android Only** | **COMPLETED & VERIFIED** |
-| FEATURE 09 | Soundscape Polish, Weather FX & Deep Optimization | Android Only | Planned (Pending Next Phase) |
+| **FEATURE 09** | **Game Modes, Missions & Challenges** | **Android Only** | **COMPLETED & VERIFIED** |
+| FEATURE 10 | Soundscape Polish, Weather FX & Deep Optimization | Android Only | Planned (Pending Next Phase) |
 
 ---
 
@@ -259,12 +260,40 @@
 
 ---
 
-## Next Steps for Feature 09 (Preparation Only)
+## Feature 09: Game Modes, Missions & Challenges (Detailed Breakdown)
 
-*Note: Per constraints, Feature 09 will NOT be started automatically.*
+### Acceptance Criteria & Verification Matrix
+
+| Requirement | Implementation Summary | Status | Verified Target |
+| :--- | :--- | :---: | :--- |
+| **1. Game Modes** | Implemented **Endless Drive** (survive as long as possible, maximize distance & combo score until hull failure) and **Time Trial** (60.0s sprint against the clock to maximize distance, with +1.5s time extensions on near-miss overtakes and `TIME EXPIRED` game-over trigger). Reuses 100% of the existing custom Canvas rendering, road curves, elevation, traffic, collisions, controls, audio, and equipped custom vehicle. | **PASS** | `ArcadeGameEngine`, `GameModeInfo`, `emulator-5554` |
+| **2. Mission System** | Created 8 distinct mission directives across 6 types: Distance (`FIRST LAUNCH` 500m, `CIRCUIT OVERLOAD` 1800m), Top Speed (`VELOCITY BREAKER` 170 MPH), Clean Driving (`GHOST DRIFT` 400m 0 hits, `FLAWLESS VECTOR` 800m 0 hits), Survival Duration (`ENDURANCE TEST` 40s), Near-Misses (`HAZARD SLICER` 4 overtakes), and Mode-Specific Distance (`CHRONO SPRINTER` 800m in Time Trial). Real-time evaluation with in-game completion toasts and duplicate reward prevention. | **PASS** | `MissionDefinition`, `ArcadeGameController`, Storage Tests |
+| **3. Results & Rewards** | Mode-specific session summary on `ArcadeGameOverDialog`: shows mode badge, reason (`TIME EXPIRED` or `VEHICLE CRITICAL DAMAGE`), distance covered, survival time, near-miss overtakes, final score, top speed, and newly completed mission cards with PTS rewards. Immediate local reward point accumulation. Dedicated Missions modal sheet and clear Replay/Garage navigation flow. | **PASS** | `ArcadeGameOverDialog`, `MissionsSheet`, Android 15 Emulator |
+| **4. Persistence Architecture** | Integrated seamlessly with existing `PlayerDataStorage` and `shared_preferences`. Persists `timeTrialBestDistanceMeters`, `completedMissionIds` set, `totalRewardPoints`, and `selectedGameMode`. Preserves all garage selections, vehicle customizations, audio settings, and career records without requiring any backend or cloud accounts. | **PASS** | `SharedPreferencesPlayerDataStorage`, Unit Tests |
+| **5. UI/UX Excellence** | Cohesive cyberpunk styling with neon Cyan and Gold Amber accents. Added `GameModeSelector` with mode cards, rules summary, and personal records; dedicated `MissionsSheet` modal bottom sheet; HUD Time Trial countdown banner with near-miss bonus flashes; in-game mission completion toast banners. Fully responsive on Android touch screens. | **PASS** | Live Screen Capture (`emulator-5554`) |
+| **6. Automated Testing Suite** | Authored 21 comprehensive unit, engine, and widget tests in `test/game_modes_and_missions_test.dart` covering mode definitions, mission evaluations, clean-drive fail conditions, time trial countdown and expiry, near-miss overtaking time additions, controller real-time evaluation, storage persistence, and interactive widgets. Full project test suite: **101/101 tests PASSING** with **0 flutter analyze issues**. | **PASS** | `flutter analyze` & `flutter test` (101/101 PASS) |
+| **7. Android Target Verification** | Built debug APK (`assembleDebug` in 8.1s), installed on Android 15 ARM64 emulator (`emulator-5554`), executed mode switching, launched Time Trial, triggered in-run mission completion (`HAZARD SLICER`), verified game-over summary, and confirmed reward persistence in the Missions sheet. | **PASS** | `emulator-5554` (API 35 ARM64) |
+
+### Live Android Target Verification (`emulator-5554`)
+- **Device**: Android 15 (API 35), architecture `arm64-v8a`, resolution 1080x2400.
+- **Verification Artifacts Captured**:
+  1. `feature_09_mode_selector.png`: Home Screen featuring the new interactive `GAME MODE` card with `ENDLESS DRIVE` selected, rules banner, and `MISSIONS (0/8)` button.
+  2. `feature_09_missions_sheet.png`: `CAREER MISSIONS & CHALLENGES` modal sheet displaying `COMPLETED 0 / 8`, `0 PTS`, and the catalog of 8 missions with reward badges.
+  3. `feature_09_mode_selector_timetrial.png`: Switching to `TIME TRIAL` mode showing active Gold Amber styling, 60s countdown parameters, and personal best distance.
+  4. `feature_09_time_trial_gameplay.png`: Active Time Trial driving session displaying the prominent `TIME REMAINING: 58.2s` countdown banner, equipped Hyperion Phantom with Electric Cyan paint and underglow, and HUD telemetry.
+  5. `feature_09_time_trial_driving.png`: High-speed navigation through traffic curves with live timer countdown (46.2s) and collision/near-miss dynamics.
+  6. `feature_09_game_over_summary.png`: Mode-specific Game Over summary with Gold Amber border, `VEHICLE CRITICAL DAMAGE` badge, full telemetry (Distance: 352.5 M, Survival Time: 29.7s, Near-Misses: 6, Score: 2430), and newly completed `HAZARD SLICER (+2500 PTS)` mission card.
+  7. `feature_09_garage_return.png`: Return to garage showing live reactive update: `MISSIONS (1/8)` and `BEST DISTANCE 352 M` under Time Trial.
+  8. `feature_09_missions_claimed.png`: Re-opened Missions sheet verifying persistent state: `COMPLETED 1 / 8`, `REWARD POINTS 2500 PTS`, and `HAZARD SLICER` marked as `CLAIMED` and `COMPLETED`.
+
+---
+
+## Next Steps for Feature 10 (Preparation Only)
+
+*Note: Per technical constraints, Feature 10 will NOT be started automatically.*
 
 1. **Weather Effects & Atmospheric Simulation**:
-   - Dynamic rain particle system, wet asphalt surface reflections, lightning flash illumination events, and neon bloom.
+   - Dynamic rain particle system, wet asphalt surface reflections, lightning flash illumination events, and atmospheric neon bloom.
 2. **Advanced Soundscape Polish**:
    - Cornering tire squeal audio, supersonic aerodynamic wind shear at > 180 MPH, and sector transition harmonic chimes.
 3. **Deep Profiling & Frame Budget Optimization**:

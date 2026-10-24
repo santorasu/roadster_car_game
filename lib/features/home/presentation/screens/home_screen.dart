@@ -5,16 +5,50 @@ import '../../../../core/storage/player_data_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/cyber_button.dart';
+import 'package:tesla_roadster_game/features/arcade_driving/domain/models/game_mode.dart';
 import 'package:tesla_roadster_game/features/arcade_driving/presentation/screens/arcade_game_screen.dart';
 import 'package:tesla_roadster_game/features/arcade_driving/presentation/widgets/audio_settings_dialog.dart';
 import 'package:tesla_roadster_game/features/game_viewport/presentation/screens/game_viewport_screen.dart';
 import 'package:tesla_roadster_game/features/garage/presentation/widgets/garage_vehicle_selector.dart';
 import '../widgets/career_records_card.dart';
+import '../widgets/game_mode_selector.dart';
 import '../widgets/quick_specs_row.dart';
 import '../widgets/system_status_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  GameMode _selectedMode = GameMode.endlessDrive;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedMode();
+    PlayerDataService.changeNotifier.addListener(_loadSelectedMode);
+  }
+
+  @override
+  void dispose() {
+    PlayerDataService.changeNotifier.removeListener(_loadSelectedMode);
+    super.dispose();
+  }
+
+  void _loadSelectedMode() {
+    PlayerDataService.instance.loadCareerData().then((data) {
+      if (mounted) {
+        setState(() {
+          _selectedMode = data.selectedGameMode == 'time_trial'
+              ? GameMode.timeTrial
+              : GameMode.endlessDrive;
+        });
+      }
+    }).catchError((_) {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,19 +116,28 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               const CareerRecordsCard(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Feature 02: Playable Arcade Driving Prototype (Flutter-only)
+              GameModeSelector(
+                onModeChanged: (mode) {
+                  setState(() {
+                    _selectedMode = mode;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Feature 02 & 09: Playable Arcade Driving
               CyberButton(
                 key: const Key('play_arcade_game_button'),
                 text: 'Play Arcade Drive (Flutter)',
                 icon: Icons.sports_motorsports_rounded,
                 variant: CyberButtonVariant.primary,
                 height: 58,
-                onPressed: () async {
-                  await Navigator.of(context).push(
+                onPressed: () {
+                  Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const ArcadeGameScreen(),
+                      builder: (_) => ArcadeGameScreen(initialMode: _selectedMode),
                     ),
                   );
                   PlayerDataService.notifyDataChanged();

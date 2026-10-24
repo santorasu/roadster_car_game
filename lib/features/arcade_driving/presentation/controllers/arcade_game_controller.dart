@@ -3,10 +3,12 @@ import 'package:flutter/scheduler.dart';
 import '../../../../core/storage/player_data_storage.dart';
 import '../../domain/game_engine/arcade_game_engine.dart';
 import '../../domain/models/arcade_game_state.dart';
+import '../../domain/models/game_mode.dart';
 import '../../domain/models/game_particle.dart';
 import '../../domain/models/obstacle_vehicle.dart';
 import '../../domain/models/player_car.dart';
 import '../../../garage/domain/models/vehicle_definition.dart';
+import '../../../missions/domain/models/mission_definition.dart';
 
 /// Presentation controller bridging the Flutter UI to the ArcadeGameEngine loop.
 class ArcadeGameController extends TickerProvider {
@@ -41,17 +43,26 @@ class ArcadeGameController extends TickerProvider {
   List<ObstacleVehicle> get obstacles => engine.obstacles;
   List<GameParticle> get particles => engine.particles;
   double get roadScrollOffset => engine.roadScrollOffset;
+  GameMode get gameMode => engine.state.gameMode;
 
   List<String> newlyUnlockedMilestones = [];
+  Set<String> completedMissionIdsAtStart = {};
+  final List<MissionDefinition> newlyCompletedMissions = [];
+  MissionDefinition? activeToastMission;
+  double toastTimer = 0.0;
+
   bool _isGameOverRecorded = false;
 
   /// Initializes the ticker and starts the simulation
-  void init({required double width, required double height}) {
+  void init({required double width, required double height, GameMode? mode}) {
     screenWidth = width;
     screenHeight = height;
     _lastTick = Duration.zero;
     _isGameOverRecorded = false;
     newlyUnlockedMilestones.clear();
+    newlyCompletedMissions.clear();
+    activeToastMission = null;
+    toastTimer = 0.0;
 
     _loadCareerData();
 
@@ -59,7 +70,7 @@ class ArcadeGameController extends TickerProvider {
     _ticker = createTicker(_onTick);
     _ticker!.start();
 
-    engine.start();
+    engine.start(mode: mode);
     _notifyListeners();
   }
 
@@ -68,6 +79,7 @@ class ArcadeGameController extends TickerProvider {
       if (careerData.highScore > state.highScore) {
         state.highScore = careerData.highScore;
       }
+      completedMissionIdsAtStart = Set<String>.from(careerData.completedMissionIds);
       engine.player.customization = VehicleCustomization(
         vehicleId: careerData.selectedVehicleId,
         paintColorId: careerData.selectedPaintColorId,
@@ -99,6 +111,11 @@ class ArcadeGameController extends TickerProvider {
     engine.tick(clampedDt, screenWidth, screenHeight);
     final isGameOverNow = engine.state.status == ArcadeGameStatus.gameOver;
 
+    // Mission evaluation during active gameplay
+    if (engine.state.status == ArcadeGameStatus.playing) {
+      _evaluateMissions(clampedDt);
+    }
+
     if (!wasGameOver && isGameOverNow && !_isGameOverRecorded) {
       _isGameOverRecorded = true;
       _recordGameOver();
@@ -107,13 +124,49 @@ class ArcadeGameController extends TickerProvider {
     _notifyListeners();
   }
 
+  @visibleForTesting
+  void evaluateMissionsForTesting(double dt) => _evaluateMissions(dt);
+
+  void _evaluateMissions(double dt) {
+    if (toastTimer > 0.0) {
+      toastTimer -= dt;
+      if (toastTimer <= 0.0) {
+        activeToastMission = null;
+      }
+    }
+
+    final currentCompletedIds = newlyCompletedMissions.map((m) => m.id).toSet();
+
+    for (final mission in MissionDefinition.allMissions) {
+      if (completedMissionIdsAtStart.contains(mission.id) ||
+          currentCompletedIds.contains(mission.id)) {
+        continue;
+      }
+
+      if (mission.isSatisfied(state: state, player: player)) {
+        newlyCompletedMissions.add(mission);
+        activeToastMission = mission;
+        toastTimer = 3.0;
+
+        // Persist immediately to prevent duplicate rewards and guarantee persistence
+        PlayerDataService.instance.completeMission(
+          missionId: mission.id,
+          rewardPoints: mission.rewardPoints,
+        );
+      }
+    }
+  }
+
   Future<void> _recordGameOver() async {
     try {
+      final modeStr = state.gameMode == GameMode.timeTrial ? 'time_trial' : 'endless';
       final unlocked = await PlayerDataService.instance.recordSession(
         score: state.score,
         distanceMeters: state.distanceMeters,
         topSpeedMph: state.topSpeedMph,
         sectorsCleared: state.sectorIndex,
+        gameMode: modeStr,
+        timeTrialDistance: state.distanceMeters,
       );
       newlyUnlockedMilestones = unlocked;
       _notifyListeners();
@@ -144,12 +197,15 @@ class ArcadeGameController extends TickerProvider {
     _notifyListeners();
   }
 
-  void restart() {
+  void restart({GameMode? mode}) {
     _lastTick = Duration.zero;
     _isGameOverRecorded = false;
     newlyUnlockedMilestones.clear();
-    engine.reset();
-    engine.start();
+    newlyCompletedMissions.clear();
+    activeToastMission = null;
+    toastTimer = 0.0;
+    engine.reset(mode: mode ?? engine.state.gameMode);
+    engine.start(mode: mode ?? engine.state.gameMode);
     _notifyListeners();
   }
 
