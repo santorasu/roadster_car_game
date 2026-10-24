@@ -34,6 +34,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
   bool _initialized = false;
   final math.Random _shakeRandom = math.Random();
   int _lastCollisionsCount = 0;
+  int _lastNearMissCount = 0;
   ArcadeGameStatus _lastStatus = ArcadeGameStatus.playing;
 
   @override
@@ -43,6 +44,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
     _controller = ArcadeGameController();
     _controller.addListener(_onControllerTick);
     _lastCollisionsCount = _controller.state.collisionsCount;
+    _lastNearMissCount = _controller.state.nearMissCount;
     _lastStatus = _controller.state.status;
 
     // Start background cyber drive music
@@ -57,6 +59,12 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
       if (_controller.state.collisionsCount > _lastCollisionsCount) {
         GameAudioService.instance.playCollision();
         _lastCollisionsCount = _controller.state.collisionsCount;
+      }
+
+      // Feature 10: Dynamic audio feedback for near miss
+      if (_controller.state.nearMissCount > _lastNearMissCount) {
+        GameAudioService.instance.playNearMiss();
+        _lastNearMissCount = _controller.state.nearMissCount;
       }
 
       // Check for road boundary friction sparks
