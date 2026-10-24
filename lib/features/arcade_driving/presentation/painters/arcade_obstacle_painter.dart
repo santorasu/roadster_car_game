@@ -7,10 +7,12 @@ import '../../domain/models/obstacle_vehicle.dart';
 class ArcadeObstaclePainter extends CustomPainter {
   final List<ObstacleVehicle> obstacles;
   final double curveOffset;
+  final double elevationOffset;
 
   ArcadeObstaclePainter({
     required this.obstacles,
     this.curveOffset = 0.0,
+    this.elevationOffset = 0.0,
   });
 
   @override
@@ -19,12 +21,18 @@ class ArcadeObstaclePainter extends CustomPainter {
     final h = size.height;
 
     for (final obstacle in obstacles) {
-      final rect = obstacle.getBoundingRect(w, h, curveOffset);
+      final rect = obstacle.getBoundingRect(w, h, curveOffset, elevationOffset);
       final cw = rect.width;
       final ch = rect.height;
 
       canvas.save();
       canvas.translate(rect.center.dx, rect.center.dy);
+
+      // Subtle perspective pitch scaling for obstacles
+      if (elevationOffset != 0.0) {
+        final pitchScaleY = (1.0 - elevationOffset * 0.05).clamp(0.92, 1.08);
+        canvas.scale(1.0, pitchScaleY);
+      }
 
       // Align vehicle heading with curved road trajectory
       if (curveOffset != 0.0) {

@@ -12,6 +12,14 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 
 ## Key Features
 
+### 🏔️ Feature 07: Road Elevation & Career Progression (Flutter Only)
+- **Pseudo-3D Vertical Road Elevation**: Smooth uphill and downhill gradients integrated with custom canvas rendering. Utilizes cubic smoothstep transitions ($3t^2 - 2t^3$) and undulating sinusoidal elevation curves, shifting road slices and vanishing points while strictly maintaining monotonic depth ($\frac{dY}{dt} > 0$).
+- **Perspective Hitbox & Scenery Alignment**: Road markings, barriers, scenery, traffic vehicles, and player vehicle calculate vertical position via an identical quadratic formula ($\Delta y = -\text{elevationOffset} \times (h \times 0.12) \times (1 - t)^2$). Bounding hitboxes track visual geometry across all elevation changes with zero drift.
+- **Elevation-Based Driving Feel & Physics**: Subtle vehicle pitch scaling ($1.0 - \text{elevationOffset} \times 0.05$) and elevation-responsive gravity acceleration ($a_{\text{gravity}} = -\text{elevation} \times (14.0\text{ or }16.0)$ MPH/s). Downhills naturally accelerate the hypercar beyond 150+ MPH, while uphills create authentic resistance without breaking steering or collision recovery.
+- **7-Sector Elevation Track System**: Every sector on the 3,000-meter course features dedicated elevation profiles (Flat Boulevard, Gentle Uphill sweep, Downhill connector, Steep Uphill canyon, Undulating rollercoaster chicane, Steep Overpass ascent, Steep Downhill hyperspace plunge) with dynamic HUD trend indicators.
+- **Persistent Career Records & Lightweight Storage**: Persistent driver profile powered by `shared_preferences` tracking High Score, Best Distance (KM), Top Speed (MPH), Total Races, Sectors Cleared, 9 Career Milestone Badges, and audio volume/mute preferences.
+- **Session Summary & Live Garage Telemetry**: Comprehensive game-over recap displaying score, best score, distance, top speed, sector achievements, and newly unlocked milestone badges. Live garage telemetry card updates reactively via `ValueNotifier`.
+
 ### 🛣️ Feature 06: Dynamic Roads & Advanced Gameplay (Flutter Only)
 - **Pseudo-3D Curved Roads**: Smooth left and right dynamic road curvature based on quadratic depth perspective $(1 - t)^2$. The road curves naturally from the player's bumper towards the distant horizon.
 - **Continuous Road Transitions**: Gradual curve entry, sustained turns, and smooth return to straight roads using cubic smoothstep interpolation ($3t^2 - 2t^3$) with zero visual snapping or camera jerking.
@@ -81,7 +89,7 @@ An electric hypercar 3D driving game foundation inspired by the Tesla Roadster c
 # Static analysis (0 errors, 0 warnings, 0 deprecations)
 flutter analyze
 
-# Automated widget, audio, handling, visual, and dynamic road unit tests (48 passed across 6 suites)
+# Automated widget, audio, handling, visual, dynamic road, and elevation/career unit tests (66 passed across 7 suites)
 flutter test
 ```
 

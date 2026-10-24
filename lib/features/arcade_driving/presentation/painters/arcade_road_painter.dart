@@ -9,17 +9,25 @@ class ArcadeRoadPainter extends CustomPainter {
   final double scrollOffset;
   final double playerSpeedMph;
   final double curveOffset;
+  final double elevationOffset;
 
   ArcadeRoadPainter({
     required this.scrollOffset,
     required this.playerSpeedMph,
     this.curveOffset = 0.0,
+    this.elevationOffset = 0.0,
   });
 
   /// Center X offset of the road at vertical depth t (0.0 = horizon, 1.0 = bottom)
   double getCurveShift(double t, double w) {
     final maxHorizonShift = w * 0.28;
     return curveOffset * maxHorizonShift * math.pow(1.0 - t, 2.0);
+  }
+
+  /// Vertical elevation shift of road at vertical depth t (0.0 = horizon, 1.0 = bottom)
+  double getElevationShift(double t, double h) {
+    final maxElevationShift = h * 0.12;
+    return elevationOffset * maxElevationShift * math.pow(1.0 - t, 2.0);
   }
 
   /// Center X coordinate of the road at depth t
@@ -44,24 +52,26 @@ class ArcadeRoadPainter extends CustomPainter {
     return getRoadCenterX(t, w) + (getRoadWidth(t, w) / 2);
   }
 
-  /// Vertical Y coordinate at depth t
+  /// Vertical Y coordinate at depth t, accounting for vertical road elevation
   double getRoadY(double t, double h, double horizonY) {
-    return horizonY + (h - horizonY) * t;
+    return horizonY + (h - horizonY) * t - getElevationShift(t, h);
   }
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
+    if (w <= 0 || h <= 0) return;
 
     // Horizon line (vanishing point at ~18% screen height)
     final horizonY = h * 0.18;
+    final effectiveHorizonY = getRoadY(0.0, h, horizonY).clamp(h * 0.04, h * 0.40);
 
-    // 1. Deep Cyber Sky & Multi-Tier Distant Skyline with Parallax Yaw
-    _drawSkyAndSkyline(canvas, w, h, horizonY);
+    // 1. Deep Cyber Sky & Multi-Tier Distant Skyline with Parallax Yaw and Elevation Pitch
+    _drawSkyAndSkyline(canvas, w, h, effectiveHorizonY);
 
     // 2. Off-Road Perspective Neon Terrain Grid
-    _drawOffRoadTerrain(canvas, w, h, horizonY);
+    _drawOffRoadTerrain(canvas, w, h, effectiveHorizonY);
 
     // 3. Road Shoulder Gravel Run-Off Strips (Curved)
     _drawRoadShoulders(canvas, w, h, horizonY);
@@ -107,11 +117,12 @@ class ArcadeRoadPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, w, horizonY));
     canvas.drawRect(Rect.fromLTWH(0, 0, w, horizonY), skyPaint);
 
-    // Parallax horizon counter-shift during turns
+    // Parallax horizon counter-shift during turns and vertical pitch during elevation
     final parallaxShift = -curveOffset * 32.0;
+    final pitchShift = -elevationOffset * 18.0;
 
     canvas.save();
-    canvas.translate(parallaxShift, 0.0);
+    canvas.translate(parallaxShift, pitchShift);
 
     // 2. Distant Starfield & Data Grid Points
     final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.45);

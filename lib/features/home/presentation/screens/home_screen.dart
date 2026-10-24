@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/audio/game_audio_service.dart';
 import '../../../../core/bridge/unity_bridge_service.dart';
+import '../../../../core/storage/player_data_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/cyber_button.dart';
 import 'package:tesla_roadster_game/features/arcade_driving/presentation/screens/arcade_game_screen.dart';
 import 'package:tesla_roadster_game/features/arcade_driving/presentation/widgets/audio_settings_dialog.dart';
 import 'package:tesla_roadster_game/features/game_viewport/presentation/screens/game_viewport_screen.dart';
+import '../widgets/career_records_card.dart';
 import '../widgets/quick_specs_row.dart';
 import '../widgets/roadster_hero_banner.dart';
 import '../widgets/system_status_card.dart';
@@ -77,6 +79,9 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               const SystemStatusCard(),
+              const SizedBox(height: 16),
+
+              const CareerRecordsCard(),
               const SizedBox(height: 24),
 
               // Feature 02: Playable Arcade Driving Prototype (Flutter-only)
@@ -86,12 +91,13 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.sports_motorsports_rounded,
                 variant: CyberButtonVariant.primary,
                 height: 58,
-                onPressed: () {
-                  Navigator.of(context).push(
+                onPressed: () async {
+                  await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => const ArcadeGameScreen(),
                     ),
                   );
+                  PlayerDataService.notifyDataChanged();
                 },
               ),
               const SizedBox(height: 12),

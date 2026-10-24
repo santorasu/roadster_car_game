@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'audio_settings.dart';
+import '../storage/player_data_storage.dart';
 
 
 /// Centralized audio controller handling BGM, dynamic electric motor synthesis/looping,
@@ -49,6 +50,9 @@ class GameAudioService {
     if (_isInitialized || isTestMode) return;
 
     try {
+      final careerData = await PlayerDataService.instance.loadCareerData();
+      settings.loadFromCareerData(careerData);
+
       _bgmPlayer = AudioPlayer()..setReleaseMode(ReleaseMode.loop);
       _enginePlayer = AudioPlayer()..setReleaseMode(ReleaseMode.loop);
       _collisionPlayer = AudioPlayer()..setReleaseMode(ReleaseMode.stop);

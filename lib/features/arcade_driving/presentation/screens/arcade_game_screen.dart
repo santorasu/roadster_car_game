@@ -158,6 +158,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                       scrollOffset: _controller.roadScrollOffset,
                       playerSpeedMph: _controller.player.speedMph,
                       curveOffset: _controller.state.currentCurvature,
+                      elevationOffset: _controller.state.currentElevation,
                     ),
                     foregroundPainter: null,
                     child: Stack(
@@ -168,6 +169,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                             painter: ArcadeObstaclePainter(
                               obstacles: _controller.obstacles,
                               curveOffset: _controller.state.currentCurvature,
+                              elevationOffset: _controller.state.currentElevation,
                             ),
                           ),
                         ),
@@ -178,6 +180,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                             painter: ArcadeCarPainter(
                               player: _controller.player,
                               curveOffset: _controller.state.currentCurvature,
+                              elevationOffset: _controller.state.currentElevation,
                             ),
                           ),
                         ),
@@ -252,6 +255,7 @@ class _ArcadeGameScreenState extends State<ArcadeGameScreen> with WidgetsBinding
                 child: ArcadeGameOverDialog(
                   state: _controller.state,
                   player: _controller.player,
+                  newlyUnlockedMilestones: _controller.newlyUnlockedMilestones,
                   onRestart: () {
                     HapticFeedback.heavyImpact();
                     GameAudioService.instance.playUiTap();

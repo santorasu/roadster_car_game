@@ -16,6 +16,7 @@ class ArcadeGameState {
   double screenShakeIntensity;
   String currentSectorName;
   double currentCurvature;
+  double currentElevation;
   double sectorNotificationTimer;
   int sectorIndex;
 
@@ -30,6 +31,7 @@ class ArcadeGameState {
     this.screenShakeIntensity = 0.0,
     this.currentSectorName = 'NEON HIGHWAY',
     this.currentCurvature = 0.0,
+    this.currentElevation = 0.0,
     this.sectorNotificationTimer = 0.0,
     this.sectorIndex = 1,
   });
@@ -44,6 +46,7 @@ class ArcadeGameState {
     screenShakeIntensity = 0.0;
     currentSectorName = 'NEON HIGHWAY';
     currentCurvature = 0.0;
+    currentElevation = 0.0;
     sectorNotificationTimer = 0.0;
     sectorIndex = 1;
   }

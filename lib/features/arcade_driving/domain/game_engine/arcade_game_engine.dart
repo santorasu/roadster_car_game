@@ -101,6 +101,7 @@ class ArcadeGameEngine {
         ? trackManager.sections.first.name
         : 'NEON HIGHWAY';
     state.currentCurvature = 0.0;
+    state.currentElevation = 0.0;
     state.sectorNotificationTimer = 0.0;
     state.sectorIndex = 1;
     obstacles.clear();
@@ -118,9 +119,11 @@ class ArcadeGameEngine {
       player.collisionRecoveryTimer = math.max(0.0, player.collisionRecoveryTimer - dt);
     }
 
-    // Dynamic Road Curvature & Track Progression
+    // Dynamic Road Curvature, Elevation & Track Progression
     final currentCurvature = trackManager.computeCurvatureAt(player.distanceTraveledMeters);
+    final currentElevation = trackManager.computeElevationAt(player.distanceTraveledMeters);
     state.currentCurvature = currentCurvature;
+    state.currentElevation = currentElevation;
 
     final activeSection = trackManager.getSectionForDistance(player.distanceTraveledMeters);
     final sectorIndex = trackManager.getSectorIndex(player.distanceTraveledMeters);
@@ -151,6 +154,14 @@ class ArcadeGameEngine {
       } else {
         player.speedMph = (player.speedMph + 10.0 * dt).clamp(0.0, minSpeed);
       }
+    }
+
+    // Subtle elevation-based gravity speed feedback
+    // Uphill (>0) adds gentle climb resistance, downhill (<0) adds speed momentum
+    if (currentElevation.abs() > 0.01 && player.speedMph > 1.0) {
+      final gravityFactor = currentElevation > 0.0 ? 14.0 : 16.0;
+      final gravityAccel = -currentElevation * gravityFactor;
+      player.speedMph = (player.speedMph + gravityAccel * dt).clamp(0.0, topSpeed);
     }
 
     if (player.speedMph > state.topSpeedMph) {
@@ -254,8 +265,8 @@ class ArcadeGameEngine {
       _spawnObstacle();
     }
 
-    // 6. Update Obstacles & Check Collisions (Passing road curvature to bounding rects)
-    final playerRect = player.getBoundingRect(screenWidth, screenHeight, currentCurvature);
+    // 6. Update Obstacles & Check Collisions (Passing road curvature and elevation to bounding rects)
+    final playerRect = player.getBoundingRect(screenWidth, screenHeight, currentCurvature, currentElevation);
 
     for (int i = obstacles.length - 1; i >= 0; i--) {
       final obstacle = obstacles[i];
@@ -267,7 +278,7 @@ class ArcadeGameEngine {
 
       // Check collision if obstacle is near player's vertical zone
       if (!obstacle.hasCollided && obstacle.yProgress > 0.60 && obstacle.yProgress < 0.90) {
-        final obstacleRect = obstacle.getBoundingRect(screenWidth, screenHeight, currentCurvature);
+        final obstacleRect = obstacle.getBoundingRect(screenWidth, screenHeight, currentCurvature, currentElevation);
         if (playerRect.overlaps(obstacleRect)) {
           _handleCollision(obstacle, playerRect, obstacleRect);
         }

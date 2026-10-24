@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../storage/player_data_storage.dart';
 
 /// Manages volume levels, mute states, and audio persistence preferences.
 class AudioSettings extends ChangeNotifier {
@@ -33,10 +34,32 @@ class AudioSettings extends ChangeNotifier {
     return (_masterVolume * _sfxVolume).clamp(0.0, 1.0);
   }
 
+  void loadFromCareerData(PlayerCareerData data) {
+    _masterVolume = data.masterVolume;
+    _musicVolume = data.musicVolume;
+    _sfxVolume = data.sfxVolume;
+    _masterMuted = data.masterMuted;
+    _musicMuted = data.musicMuted;
+    _sfxMuted = data.sfxMuted;
+    notifyListeners();
+  }
+
+  void _persist() {
+    PlayerDataService.instance.saveAudioSettings(
+      masterVolume: _masterVolume,
+      musicVolume: _musicVolume,
+      sfxVolume: _sfxVolume,
+      masterMuted: _masterMuted,
+      musicMuted: _musicMuted,
+      sfxMuted: _sfxMuted,
+    );
+  }
+
   // Setters
   void setMasterMuted(bool muted) {
     if (_masterMuted == muted) return;
     _masterMuted = muted;
+    _persist();
     notifyListeners();
   }
 
@@ -46,12 +69,14 @@ class AudioSettings extends ChangeNotifier {
     final clamped = volume.clamp(0.0, 1.0);
     if ((_masterVolume - clamped).abs() < 0.001) return;
     _masterVolume = clamped;
+    _persist();
     notifyListeners();
   }
 
   void setMusicMuted(bool muted) {
     if (_musicMuted == muted) return;
     _musicMuted = muted;
+    _persist();
     notifyListeners();
   }
 
@@ -61,12 +86,14 @@ class AudioSettings extends ChangeNotifier {
     final clamped = volume.clamp(0.0, 1.0);
     if ((_musicVolume - clamped).abs() < 0.001) return;
     _musicVolume = clamped;
+    _persist();
     notifyListeners();
   }
 
   void setSfxMuted(bool muted) {
     if (_sfxMuted == muted) return;
     _sfxMuted = muted;
+    _persist();
     notifyListeners();
   }
 
@@ -76,6 +103,7 @@ class AudioSettings extends ChangeNotifier {
     final clamped = volume.clamp(0.0, 1.0);
     if ((_sfxVolume - clamped).abs() < 0.001) return;
     _sfxVolume = clamped;
+    _persist();
     notifyListeners();
   }
 
@@ -86,6 +114,7 @@ class AudioSettings extends ChangeNotifier {
     _musicVolume = 0.65;
     _sfxMuted = false;
     _sfxVolume = 0.85;
+    _persist();
     notifyListeners();
   }
 }

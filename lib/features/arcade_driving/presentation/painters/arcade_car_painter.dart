@@ -9,10 +9,12 @@ import '../../domain/models/player_car.dart';
 class ArcadeCarPainter extends CustomPainter {
   final PlayerCar player;
   final double curveOffset;
+  final double elevationOffset;
 
   ArcadeCarPainter({
     required this.player,
     this.curveOffset = 0.0,
+    this.elevationOffset = 0.0,
   });
 
   @override
@@ -20,13 +22,17 @@ class ArcadeCarPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Use curved bounding rectangle for exact physics alignment
-    final rect = player.getBoundingRect(w, h, curveOffset);
+    // Use curved and elevated bounding rectangle for exact physics alignment
+    final rect = player.getBoundingRect(w, h, curveOffset, elevationOffset);
     final carWidth = rect.width / 0.85;
     final carHeight = rect.height / 0.85;
 
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
+
+    // Subtle perspective pitch scaling (compress slightly uphill, expand slightly downhill)
+    final pitchScaleY = (1.0 - elevationOffset * 0.05).clamp(0.92, 1.08);
+    canvas.scale(1.0, pitchScaleY);
 
     // Dynamic car tilt / roll during steering and banking into road curve
     final curveBank = -curveOffset * 0.04;

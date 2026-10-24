@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/audio/game_audio_service.dart';
+import '../../../../core/storage/player_data_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/cyber_button.dart';
 import '../../domain/models/arcade_game_state.dart';
@@ -12,6 +13,7 @@ import 'audio_settings_dialog.dart';
 class ArcadeGameOverDialog extends StatelessWidget {
   final ArcadeGameState state;
   final PlayerCar player;
+  final List<String> newlyUnlockedMilestones;
   final VoidCallback onRestart;
   final VoidCallback onExit;
 
@@ -19,6 +21,7 @@ class ArcadeGameOverDialog extends StatelessWidget {
     super.key,
     required this.state,
     required this.player,
+    this.newlyUnlockedMilestones = const [],
     required this.onRestart,
     required this.onExit,
   });
@@ -31,131 +34,205 @@ class ArcadeGameOverDialog extends StatelessWidget {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
       child: Center(
-        child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 22.w),
-          padding: EdgeInsets.all(22.r),
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(
-              color: AppColors.roadsterRed,
-              width: 2.0,
+        child: SingleChildScrollView(
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 22.w, vertical: 16.h),
+            padding: EdgeInsets.all(20.r),
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(
+                color: AppColors.roadsterRed,
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.roadsterRed.withValues(alpha: 0.4),
+                  blurRadius: 32.r,
+                  spreadRadius: 3.r,
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.roadsterRed.withValues(alpha: 0.4),
-                blurRadius: 32.r,
-                spreadRadius: 3.r,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Warning Badge
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
-                decoration: BoxDecoration(
-                  color: AppColors.roadsterRed.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(6.r),
-                  border: Border.all(
-                    color: AppColors.roadsterRed.withValues(alpha: 0.6),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppColors.roadsterRed,
-                      size: 14.r,
-                    ),
-                    SizedBox(width: 4.w),
-                    Flexible(
-                      child: Text(
-                        'HULL CRITICALLY COMPROMISED',
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                          color: AppColors.roadsterRed,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 14.h),
-
-              Text(
-                'MISSION FAILED',
-                style: TextStyle(
-                  fontSize: 26.sp,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.0,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 12.h),
-
-              if (isNewRecord) ...[
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Warning Badge
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.2),
+                    color: AppColors.roadsterRed.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(6.r),
-                    border: Border.all(color: Colors.amber),
+                    border: Border.all(
+                      color: AppColors.roadsterRed.withValues(alpha: 0.6),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star_rounded, color: Colors.amber, size: 16.r),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'NEW RECORD SCORE!',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.amber,
-                          letterSpacing: 1.2,
-                        ),
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.roadsterRed,
+                        size: 14.r,
                       ),
                       SizedBox(width: 4.w),
-                      Icon(Icons.star_rounded, color: Colors.amber, size: 16.r),
+                      Flexible(
+                        child: Text(
+                          'HULL CRITICALLY COMPROMISED',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                            color: AppColors.roadsterRed,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                SizedBox(height: 12.h),
-              ],
 
-              // Run Telemetry Statistics Card
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
+                SizedBox(height: 12.h),
+
+                Text(
+                  'MISSION FAILED',
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                    color: Colors.white,
                   ),
                 ),
-                child: Column(
-                  children: [
-                    _buildStatRow('FINAL SCORE', state.score.toString(), isHighlight: true),
-                    Divider(color: Colors.white.withValues(alpha: 0.1), height: 14.h),
-                    _buildStatRow('BEST SCORE', state.highScore.toString()),
-                    Divider(color: Colors.white.withValues(alpha: 0.1), height: 14.h),
-                    _buildStatRow('DISTANCE', '$distanceKm KM'),
-                    Divider(color: Colors.white.withValues(alpha: 0.1), height: 14.h),
-                    _buildStatRow('TOP SPEED', '${player.topSpeedMph.round()} MPH'),
-                    Divider(color: Colors.white.withValues(alpha: 0.1), height: 14.h),
-                    _buildStatRow('MAX MULTIPLIER', '${state.comboMultiplier.toStringAsFixed(1)}x'),
-                  ],
+                SizedBox(height: 10.h),
 
+                if (isNewRecord) ...[
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(6.r),
+                      border: Border.all(color: Colors.amber),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.star_rounded, color: Colors.amber, size: 16.r),
+                        SizedBox(width: 4.w),
+                        Text(
+                          'NEW RECORD SCORE!',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.amber,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        SizedBox(width: 4.w),
+                        Icon(Icons.star_rounded, color: Colors.amber, size: 16.r),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                ],
+
+                // Run Telemetry Statistics Card (Distance, Speed, Sector Achievements)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildStatRow('FINAL SCORE', state.score.toString(), isHighlight: true),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                      _buildStatRow('BEST SCORE', state.highScore.toString()),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                      _buildStatRow('DISTANCE', '$distanceKm KM'),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                      _buildStatRow('TOP SPEED', '${player.topSpeedMph.round()} MPH'),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                      _buildStatRow(
+                        'SECTOR REACHED',
+                        'SEC 0${state.sectorIndex}: ${state.currentSectorName}',
+                      ),
+                      Divider(color: Colors.white.withValues(alpha: 0.1), height: 10.h),
+                      _buildStatRow('MAX MULTIPLIER', '${state.comboMultiplier.toStringAsFixed(1)}x'),
+                    ],
+                  ),
                 ),
-              ),
-              SizedBox(height: 18.h),
+
+                // Newly Unlocked Career Milestones
+                if (newlyUnlockedMilestones.isNotEmpty) ...[
+                  SizedBox(height: 10.h),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(10.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10.r),
+                      border: Border.all(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.emoji_events_rounded, color: const Color(0xFF00E5FF), size: 14.r),
+                            SizedBox(width: 4.w),
+                            Text(
+                              'CAREER MILESTONE UNLOCKED!',
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF00E5FF),
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6.h),
+                        Wrap(
+                          spacing: 6.w,
+                          runSpacing: 4.h,
+                          children: newlyUnlockedMilestones.map((id) {
+                            final milestone = CareerMilestone.getById(id);
+                            final title = milestone?.title ?? id.toUpperCase();
+                            return Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(4.r),
+                                border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(milestone?.icon ?? Icons.star, size: 10.r, color: const Color(0xFF00E5FF)),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontSize: 8.sp,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                SizedBox(height: 14.h),
 
               // Action Buttons
               CyberButton(
@@ -206,8 +283,9 @@ class ArcadeGameOverDialog extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildStatRow(String label, String value, {bool isHighlight = false}) {
     return Row(
@@ -222,13 +300,18 @@ class ArcadeGameOverDialog extends StatelessWidget {
             letterSpacing: 1.0,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isHighlight ? 15.sp : 12.sp,
-            fontWeight: FontWeight.w900,
-            fontFamily: 'monospace',
-            color: isHighlight ? const Color(0xFF00E5FF) : Colors.white,
+        SizedBox(width: 8.w),
+        Flexible(
+          child: Text(
+            value,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: isHighlight ? 15.sp : 12.sp,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'monospace',
+              color: isHighlight ? const Color(0xFF00E5FF) : Colors.white,
+            ),
           ),
         ),
       ],

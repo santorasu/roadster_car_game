@@ -283,6 +283,25 @@ class ArcadeHud extends StatelessWidget {
                             letterSpacing: 1.2,
                           ),
                         ),
+                        if (state.currentElevation.abs() > 0.1) ...[
+                          SizedBox(width: 6.w),
+                          Icon(
+                            state.currentElevation > 0
+                                ? Icons.trending_up_rounded
+                                : Icons.trending_down_rounded,
+                            size: 13.r,
+                            color: Colors.black,
+                          ),
+                          SizedBox(width: 2.w),
+                          Text(
+                            state.currentElevation > 0 ? 'UPHILL' : 'DOWNHILL',
+                            style: TextStyle(
+                              fontSize: 8.sp,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

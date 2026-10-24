@@ -73,15 +73,25 @@ class PlayerCar {
     topSpeedMph = 0.0;
   }
 
-  /// Calculates the 2D bounding rectangle in screen coordinates, accounting for road curvature
-  Rect getBoundingRect(double screenWidth, double screenHeight, [double curveOffset = 0.0]) {
+  /// Calculates the 2D bounding rectangle in screen coordinates, accounting for road curvature and elevation
+  Rect getBoundingRect(
+    double screenWidth,
+    double screenHeight, [
+    double curveOffset = 0.0,
+    double elevationOffset = 0.0,
+  ]) {
     final horizonY = screenHeight * 0.18;
-    final centerY = screenHeight * 0.75;
-    final t = ((centerY - horizonY) / (screenHeight - horizonY)).clamp(0.0, 1.0);
+    final baseCenterY = screenHeight * 0.75;
+    final t = ((baseCenterY - horizonY) / (screenHeight - horizonY)).clamp(0.0, 1.0);
 
     // Lateral displacement of road centerline due to curvature at depth t
     final maxHorizonShift = screenWidth * 0.28;
     final curveShift = curveOffset * maxHorizonShift * math.pow(1.0 - t, 2.0);
+
+    // Vertical displacement of road centerline due to elevation at depth t
+    final maxElevationShift = screenHeight * 0.12;
+    final elevationShift = elevationOffset * maxElevationShift * math.pow(1.0 - t, 2.0);
+    final centerY = baseCenterY - elevationShift;
 
     // Perspective road width at car's vertical depth
     final roadTopWidth = screenWidth * 0.32;

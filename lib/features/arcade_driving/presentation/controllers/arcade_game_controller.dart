@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+import '../../../../core/storage/player_data_storage.dart';
 import '../../domain/game_engine/arcade_game_engine.dart';
 import '../../domain/models/arcade_game_state.dart';
 import '../../domain/models/game_particle.dart';
@@ -39,11 +41,18 @@ class ArcadeGameController extends TickerProvider {
   List<GameParticle> get particles => engine.particles;
   double get roadScrollOffset => engine.roadScrollOffset;
 
+  List<String> newlyUnlockedMilestones = [];
+  bool _isGameOverRecorded = false;
+
   /// Initializes the ticker and starts the simulation
   void init({required double width, required double height}) {
     screenWidth = width;
     screenHeight = height;
     _lastTick = Duration.zero;
+    _isGameOverRecorded = false;
+    newlyUnlockedMilestones.clear();
+
+    _loadCareerData();
 
     _ticker?.dispose();
     _ticker = createTicker(_onTick);
@@ -51,6 +60,15 @@ class ArcadeGameController extends TickerProvider {
 
     engine.start();
     _notifyListeners();
+  }
+
+  void _loadCareerData() {
+    PlayerDataService.instance.loadCareerData().then((careerData) {
+      if (careerData.highScore > state.highScore) {
+        state.highScore = careerData.highScore;
+        _notifyListeners();
+      }
+    }).catchError((_) {});
   }
 
   void updateDimensions(double width, double height) {
@@ -70,8 +88,31 @@ class ArcadeGameController extends TickerProvider {
     // Clamp dt to prevent huge leaps if frame dropped
     final clampedDt = dt.clamp(0.001, 0.05);
 
+    final wasGameOver = engine.state.status == ArcadeGameStatus.gameOver;
     engine.tick(clampedDt, screenWidth, screenHeight);
+    final isGameOverNow = engine.state.status == ArcadeGameStatus.gameOver;
+
+    if (!wasGameOver && isGameOverNow && !_isGameOverRecorded) {
+      _isGameOverRecorded = true;
+      _recordGameOver();
+    }
+
     _notifyListeners();
+  }
+
+  Future<void> _recordGameOver() async {
+    try {
+      final unlocked = await PlayerDataService.instance.recordSession(
+        score: state.score,
+        distanceMeters: state.distanceMeters,
+        topSpeedMph: state.topSpeedMph,
+        sectorsCleared: state.sectorIndex,
+      );
+      newlyUnlockedMilestones = unlocked;
+      _notifyListeners();
+    } catch (e) {
+      debugPrint('ArcadeGameController: Record game over error: $e');
+    }
   }
 
   // Controls
@@ -98,6 +139,8 @@ class ArcadeGameController extends TickerProvider {
 
   void restart() {
     _lastTick = Duration.zero;
+    _isGameOverRecorded = false;
+    newlyUnlockedMilestones.clear();
     engine.reset();
     engine.start();
     _notifyListeners();
